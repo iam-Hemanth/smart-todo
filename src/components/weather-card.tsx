@@ -1,0 +1,236 @@
+"use client";
+
+import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CloudRain,
+  Droplets,
+  MapPin,
+  RefreshCw,
+  Thermometer,
+  Wind,
+  AlertTriangle,
+} from "lucide-react";
+import { useBangaloreWeather } from "@/hooks/use-bangalore-weather";
+import { getWeatherInfo } from "@/lib/weather";
+import { cn } from "@/lib/utils";
+
+interface WeatherCardProps {
+  /** Notifies parent when current conditions are raining — used to badge outdoor todos. */
+  onRainChange?: (raining: boolean) => void;
+}
+
+function formatTime(ts: number | null): string {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function WeatherCard({ onRainChange }: WeatherCardProps) {
+  const { data, loading, error, lastUpdated, refresh } = useBangaloreWeather();
+
+  const info = data ? getWeatherInfo(data.weatherCode, data.isDay ? 1 : 0) : null;
+  const isRaining = !!info?.isRaining;
+
+  useEffect(() => {
+    onRainChange?.(isRaining);
+  }, [isRaining, onRainChange]);
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: -16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="relative overflow-hidden rounded-3xl border border-white/40 dark:border-white/10 bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
+      aria-label="Bangalore current weather"
+    >
+      {/* Animated gradient backdrop that shifts based on weather */}
+      <div
+        className={cn(
+          "absolute inset-0 -z-10 transition-all duration-1000",
+          isRaining
+            ? "bg-gradient-to-br from-sky-100 via-cyan-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900"
+            : "bg-gradient-to-br from-amber-50 via-rose-50 to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950",
+        )}
+      />
+
+      {/* Floating decorative blobs */}
+      <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -left-12 bottom-0 h-40 w-40 rounded-full bg-amber-400/20 blur-3xl" />
+
+      <div className="relative p-6 sm:p-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+              <MapPin className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Live weather</p>
+              <h2 className="text-lg font-semibold tracking-tight">Bangalore, India</h2>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={refresh}
+            disabled={loading}
+            className="group inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-background transition-all disabled:opacity-50"
+            aria-label="Refresh weather"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+            <span className="hidden sm:inline">{loading ? "Updating…" : "Refresh"}</span>
+          </button>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {error ? (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="mt-6 flex items-center gap-3 rounded-2xl border border-rose-200/70 bg-rose-50/80 dark:border-rose-900/40 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-200"
+            >
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <div>
+                <p className="font-medium">Couldn’t load weather</p>
+                <p className="text-xs opacity-80">{error}</p>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_1fr]"
+            >
+              {/* Big temperature block */}
+              <div className="flex items-center gap-5">
+                <div className="relative">
+                  {info && (
+                    <motion.div
+                      key={info.label}
+                      initial={{ scale: 0.7, opacity: 0, rotate: -8 }}
+                      animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 16 }}
+                      className={cn(
+                        "flex h-20 w-20 items-center justify-center rounded-2xl",
+                        isRaining
+                          ? "bg-sky-500/15 text-sky-600 dark:text-sky-300"
+                          : "bg-amber-500/15 text-amber-600 dark:text-amber-300",
+                      )}
+                    >
+                      <info.icon className="h-10 w-10" strokeWidth={1.75} />
+                    </motion.div>
+                  )}
+                  {loading && (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/40">
+                      <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  {data ? (
+                    <div className="flex items-start gap-1">
+                      <span className="text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums">
+                        {Math.round(data.temperature)}
+                      </span>
+                      <span className="mt-1 text-2xl font-medium text-muted-foreground">°C</span>
+                    </div>
+                  ) : (
+                    <div className="h-14 w-32 rounded-xl bg-muted/40 animate-pulse" />
+                  )}
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {info?.label ?? "Loading conditions…"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground/80">
+                    Feels like {data ? `${Math.round(data.apparentTemperature)}°C` : "—"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick stats */}
+              <div className="grid grid-cols-3 gap-3 self-center">
+                <Stat
+                  icon={<Droplets className="h-4 w-4" />}
+                  label="Humidity"
+                  value={data ? `${Math.round(data.humidity)}%` : "—"}
+                  accent="text-sky-600 dark:text-sky-300"
+                />
+                <Stat
+                  icon={<Wind className="h-4 w-4" />}
+                  label="Wind"
+                  value={data ? `${Math.round(data.windSpeed)} km/h` : "—"}
+                  accent="text-emerald-600 dark:text-emerald-300"
+                />
+                <Stat
+                  icon={<Thermometer className="h-4 w-4" />}
+                  label="Rain"
+                  value={data ? `${data.precipitation.toFixed(1)} mm` : "—"}
+                  accent="text-indigo-600 dark:text-indigo-300"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Rain banner */}
+        <AnimatePresence>
+          {isRaining && (
+            <motion.div
+              key="rain-banner"
+              initial={{ opacity: 0, y: 10, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.35 }}
+              className="mt-5 overflow-hidden"
+            >
+              <div className="flex items-center gap-3 rounded-2xl border border-sky-200/80 bg-sky-50/90 dark:border-sky-900/50 dark:bg-sky-950/40 p-3.5 text-sky-800 dark:text-sky-100">
+                <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/20">
+                  <CloudRain className="h-5 w-5" />
+                  <span className="absolute inset-0 animate-ping rounded-xl bg-sky-400/30" />
+                </span>
+                <div className="text-sm">
+                  <p className="font-semibold leading-tight">It’s raining in Bangalore right now</p>
+                  <p className="text-xs text-sky-700/80 dark:text-sky-200/80">
+                    Outdoor tasks below are flagged with a rain warning badge.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground">
+          <span>Powered by Open-Meteo</span>
+          <span>Updated {formatTime(lastUpdated)}</span>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
+function Stat({
+  icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  accent: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/40 dark:border-white/5 bg-white/50 dark:bg-white/[0.03] px-3 py-2.5 backdrop-blur-sm">
+      <div className={cn("flex items-center gap-1.5 text-xs", accent)}>
+        {icon}
+        <span className="font-medium">{label}</span>
+      </div>
+      <p className="mt-1 text-sm font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
