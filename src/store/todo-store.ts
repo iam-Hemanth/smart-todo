@@ -7,6 +7,20 @@ import { useShallow } from "zustand/react/shallow";
 export type TodoCategory = "indoor" | "outdoor";
 export type TodoPriority = "low" | "medium" | "high";
 
+export interface Subtask {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+export type TodoColor =
+  | "emerald"
+  | "amber"
+  | "rose"
+  | "violet"
+  | "sky"
+  | "slate";
+
 export interface Todo {
   id: string;
   text: string;
@@ -15,9 +29,21 @@ export interface Todo {
   completed: boolean;
   createdAt: number;
   completedAt?: number;
+  /** ISO date string (YYYY-MM-DD), optional */
+  dueDate?: string;
+  /** Free-form tag labels */
+  tags?: string[];
+  /** Optional longer notes */
+  notes?: string;
+  /** Pomodoro-style time estimate in minutes */
+  estimateMinutes?: number;
+  /** Accent color label */
+  color?: TodoColor;
+  /** Nested subtasks */
+  subtasks?: Subtask[];
 }
 
-export type FilterKey = "all" | "active" | "completed" | "outdoor" | "indoor";
+export type FilterKey = "all" | "active" | "completed" | "outdoor" | "indoor" | "overdue";
 
 interface TodoState {
   todos: Todo[];
@@ -26,6 +52,12 @@ interface TodoState {
     text: string;
     category: TodoCategory;
     priority: TodoPriority;
+    dueDate?: string;
+    tags?: string[];
+    notes?: string;
+    estimateMinutes?: number;
+    color?: TodoColor;
+    subtasks?: Subtask[];
   }) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
@@ -33,6 +65,10 @@ interface TodoState {
   clearCompleted: () => void;
   reorder: (fromId: string, toId: string) => void;
   setFilter: (filter: FilterKey) => void;
+  // Subtask helpers
+  addSubtask: (todoId: string, text: string) => void;
+  toggleSubtask: (todoId: string, subtaskId: string) => void;
+  deleteSubtask: (todoId: string, subtaskId: string) => void;
 }
 
 function uid(): string {
@@ -42,9 +78,17 @@ function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function isOverdue(t: Todo): boolean {
+  if (!t.dueDate || t.completed) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(t.dueDate + "T00:00:00");
+  return due.getTime() < today.getTime();
+}
+
 export const useTodoStore = create<TodoState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       todos: [
         {
           id: uid(),
@@ -53,6 +97,10 @@ export const useTodoStore = create<TodoState>()(
           priority: "high",
           completed: false,
           createdAt: Date.now(),
+          dueDate: new Date().toISOString().slice(0, 10),
+          tags: ["fitness"],
+          estimateMinutes: 30,
+          color: "emerald",
         },
         {
           id: uid(),
@@ -61,6 +109,9 @@ export const useTodoStore = create<TodoState>()(
           priority: "high",
           completed: false,
           createdAt: Date.now() - 1000 * 60,
+          tags: ["work"],
+          estimateMinutes: 90,
+          color: "violet",
         },
         {
           id: uid(),
@@ -70,6 +121,7 @@ export const useTodoStore = create<TodoState>()(
           completed: true,
           createdAt: Date.now() - 1000 * 60 * 60,
           completedAt: Date.now() - 1000 * 60 * 30,
+          color: "emerald",
         },
         {
           id: uid(),
@@ -78,20 +130,28 @@ export const useTodoStore = create<TodoState>()(
           priority: "medium",
           completed: false,
           createdAt: Date.now() - 1000 * 60 * 90,
+          tags: ["personal"],
+          color: "amber",
         },
       ],
       filter: "all",
 
-      addTodo: ({ text, category, priority }) =>
+      addTodo: (input) =>
         set((state) => ({
           todos: [
             {
               id: uid(),
-              text: text.trim(),
-              category,
-              priority,
+              text: input.text.trim(),
+              category: input.category,
+              priority: input.priority,
               completed: false,
               createdAt: Date.now(),
+              dueDate: input.dueDate,
+              tags: input.tags?.filter((t) => t.trim().length > 0),
+              notes: input.notes,
+              estimateMinutes: input.estimateMinutes,
+              color: input.color,
+              subtasks: input.subtasks,
             },
             ...state.todos,
           ],
@@ -136,11 +196,60 @@ export const useTodoStore = create<TodoState>()(
         }),
 
       setFilter: (filter) => set({ filter }),
+
+      addSubtask: (todoId, text) =>
+        set((state) => ({
+          todos: state.todos.map((t) =>
+            t.id === todoId
+              ? {
+                  ...t,
+                  subtasks: [
+                    ...(t.subtasks ?? []),
+                    { id: uid(), text: text.trim(), done: false },
+                  ],
+                }
+              : t,
+          ),
+        })),
+
+      toggleSubtask: (todoId, subtaskId) =>
+        set((state) => ({
+          todos: state.todos.map((t) =>
+            t.id === todoId
+              ? {
+                  ...t,
+                  subtasks: t.subtasks?.map((s) =>
+                    s.id === subtaskId ? { ...s, done: !s.done } : s,
+                  ),
+                }
+              : t,
+          ),
+        })),
+
+      deleteSubtask: (todoId, subtaskId) =>
+        set((state) => ({
+          todos: state.todos.map((t) =>
+            t.id === todoId
+              ? {
+                  ...t,
+                  subtasks: t.subtasks?.filter((s) => s.id !== subtaskId),
+                }
+              : t,
+          ),
+        })),
     }),
     {
-      name: "smart-todo:v1",
-      // Only persist the data, not transient UI state is fine here since filter is also useful.
+      name: "smart-todo:v2",
+      version: 2,
       partialize: (state) => ({ todos: state.todos, filter: state.filter }),
+      migrate: (persisted: unknown) => {
+        // Migrate v1 -> v2: just keep todos/filter, missing fields will be undefined
+        const p = (persisted ?? {}) as { todos?: Todo[]; filter?: FilterKey };
+        return {
+          todos: (p.todos ?? []).map((t) => ({ ...t })),
+          filter: p.filter ?? "all",
+        };
+      },
     },
   ),
 );
@@ -156,6 +265,8 @@ export function selectFiltered(state: TodoState): Todo[] {
       return todos.filter((t) => t.category === "outdoor");
     case "indoor":
       return todos.filter((t) => t.category === "indoor");
+    case "overdue":
+      return todos.filter(isOverdue);
     default:
       return todos;
   }
@@ -167,14 +278,20 @@ export function selectStats(state: TodoState) {
   const active = total - completed;
   const outdoor = state.todos.filter((t) => t.category === "outdoor").length;
   const indoor = total - outdoor;
+  const overdue = state.todos.filter(isOverdue).length;
   const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
-  return { total, completed, active, outdoor, indoor, pct };
+  return { total, completed, active, outdoor, indoor, overdue, pct };
 }
 
-/**
- * Hooks that memoize derived state with `useShallow` so components don't
- * re-render infinitely when selectors return new array/object references.
- */
+/** Returns the set of all tags used across todos, for autocomplete. */
+export function selectAllTags(state: TodoState): string[] {
+  const set = new Set<string>();
+  for (const t of state.todos) {
+    for (const tag of t.tags ?? []) set.add(tag);
+  }
+  return Array.from(set).sort();
+}
+
 export function useFilteredTodos(): Todo[] {
   return useTodoStore(useShallow(selectFiltered));
 }
@@ -182,3 +299,9 @@ export function useFilteredTodos(): Todo[] {
 export function useTodoStats() {
   return useTodoStore(useShallow(selectStats));
 }
+
+export function useAllTags(): string[] {
+  return useTodoStore(useShallow(selectAllTags));
+}
+
+export { isOverdue };

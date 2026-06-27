@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ClipboardList, Home, Sun, Trees } from "lucide-react";
+import { ClipboardList, Home, Sun, Trees, CheckCircle2 } from "lucide-react";
 import { useTodoStore, useFilteredTodos } from "@/store/todo-store";
 import { TodoItem } from "./todo-item";
 
@@ -57,6 +57,11 @@ function EmptyState({ filter }: { filter: string }) {
       icon: <Home className="h-7 w-7" />,
       title: "No indoor tasks",
       subtitle: "Add a task and mark it as Indoor.",
+    },
+    overdue: {
+      icon: <CheckCircle2 className="h-7 w-7" />,
+      title: "Nothing overdue",
+      subtitle: "You’re on track — every dated task is still ahead of schedule.",
     },
   };
 

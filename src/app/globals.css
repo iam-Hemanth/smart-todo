@@ -120,3 +120,37 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Accent-aware utility classes driven by --accent-custom
+   (set dynamically by the AccentPicker component).
+   When the variable is unset, fall back to the emerald palette. */
+@layer utilities {
+  .bg-accent-custom {
+    background-color: var(--accent-custom, oklch(0.62 0.17 162));
+  }
+  .text-accent-custom {
+    color: var(--accent-custom, oklch(0.62 0.17 162));
+  }
+  .border-accent-custom {
+    border-color: var(--accent-custom, oklch(0.62 0.17 162));
+  }
+  .ring-accent-custom {
+    --tw-ring-color: var(--accent-custom, oklch(0.62 0.17 162));
+  }
+  .from-accent-custom {
+    --tw-gradient-from: var(--accent-custom, oklch(0.62 0.17 162));
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent);
+  }
+  .accent-pill {
+    background-color: color-mix(in oklch, var(--accent-custom, oklch(0.62 0.17 162)) 15%, transparent);
+    border-color: color-mix(in oklch, var(--accent-custom, oklch(0.62 0.17 162)) 30%, transparent);
+    color: color-mix(in oklch, var(--accent-custom, oklch(0.62 0.17 162)) 75%, white);
+  }
+}
+
+/* Smooth color transitions when switching accent */
+button, .accent-pill, [style*="--accent-custom"] {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 250ms;
+  transition-timing-function: ease;
+}

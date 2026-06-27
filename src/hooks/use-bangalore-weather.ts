@@ -12,8 +12,18 @@ export interface CurrentWeather {
   weatherCode: number;
 }
 
+export interface CurrentAqi {
+  usAqi: number | null;
+  pm2_5: number | null;
+  pm10: number | null;
+  ozone: number | null;
+  nitrogen_dioxide: number | null;
+  sulphur_dioxide: number | null;
+}
+
 export interface WeatherState {
   data: CurrentWeather | null;
+  aqi: CurrentAqi | null;
   loading: boolean;
   error: string | null;
   lastUpdated: number | null;
@@ -22,8 +32,9 @@ export interface WeatherState {
 
 const REFETCH_MS = 10 * 60 * 1000; // 10 minutes
 
-export function useBangaloreWeather(): WeatherState {
+export function useWeather(lat: number, lon: number): WeatherState {
   const [data, setData] = useState<CurrentWeather | null>(null);
+  const [aqi, setAqi] = useState<CurrentAqi | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
@@ -32,7 +43,10 @@ export function useBangaloreWeather(): WeatherState {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/weather", { cache: "no-store" });
+      const res = await fetch(
+        `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`,
+        { cache: "no-store" },
+      );
       if (!res.ok) {
         throw new Error(`Request failed with ${res.status}`);
       }
@@ -40,10 +54,12 @@ export function useBangaloreWeather(): WeatherState {
       if (json.error) {
         throw new Error(json.error);
       }
-      const c = json?.current;
+
+      const c = json?.weather?.current;
       if (!c) {
         throw new Error("Unexpected payload from weather API");
       }
+
       setData({
         temperature: c.temperature_2m,
         apparentTemperature: c.apparent_temperature,
@@ -53,13 +69,28 @@ export function useBangaloreWeather(): WeatherState {
         isDay: c.is_day === 1,
         weatherCode: c.weather_code,
       });
+
+      const a = json?.aqi?.current;
+      setAqi(
+        a
+          ? {
+              usAqi: a.us_aqi ?? null,
+              pm2_5: a.pm2_5 ?? null,
+              pm10: a.pm10 ?? null,
+              ozone: a.ozone ?? null,
+              nitrogen_dioxide: a.nitrogen_dioxide ?? null,
+              sulphur_dioxide: a.sulphur_dioxide ?? null,
+            }
+          : null,
+      );
+
       setLastUpdated(Date.now());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load weather");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [lat, lon]);
 
   useEffect(() => {
     fetchData();
@@ -67,5 +98,5 @@ export function useBangaloreWeather(): WeatherState {
     return () => clearInterval(id);
   }, [fetchData]);
 
-  return { data, loading, error, lastUpdated, refresh: fetchData };
+  return { data, aqi, loading, error, lastUpdated, refresh: fetchData };
 }
