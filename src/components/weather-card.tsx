@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CloudRain,
   Droplets,
+  Home,
   MapPin,
   RefreshCw,
   Thermometer,
@@ -40,6 +41,7 @@ function formatTime(ts: number | null): string {
 
 export function WeatherCard({ onRainChange }: WeatherCardProps) {
   const location = useLocationStore((s) => s.location);
+  const resetToDefault = useLocationStore((s) => s.resetToDefault);
   const { data, aqi, hourly, loading, error, lastUpdated, refresh } = useWeather(
     location.lat,
     location.lon,
@@ -48,6 +50,11 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
   const info = data ? getWeatherInfo(data.weatherCode, data.isDay ? 1 : 0) : null;
   const isRaining = !!info?.isRaining;
   const aqiInfo = getAqiInfo(aqi?.usAqi);
+
+  // Show the home button only when the current location is not the default
+  const isAtDefault =
+    Math.abs(location.lat - 13.0373) < 0.01 &&
+    Math.abs(location.lon - 77.7105) < 0.01;
 
   useEffect(() => {
     onRainChange?.(isRaining);
@@ -108,6 +115,23 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
 
           <div className="flex items-center gap-2">
             <LocationSearch />
+            <AnimatePresence>
+              {!isAtDefault && (
+                <motion.button
+                  type="button"
+                  onClick={resetToDefault}
+                  initial={{ opacity: 0, scale: 0.6, width: 0 }}
+                  animate={{ opacity: 1, scale: 1, width: "auto" }}
+                  exit={{ opacity: 0, scale: 0.6, width: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="group inline-flex items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 h-8 w-8 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-500/20 transition-all"
+                  aria-label="Reset to home location (Kittaganuru)"
+                  title="Reset to home location (Kittaganuru)"
+                >
+                  <Home className="h-3.5 w-3.5" />
+                </motion.button>
+              )}
+            </AnimatePresence>
             <button
               type="button"
               onClick={refresh}
@@ -382,7 +406,8 @@ void Wind;
 
 /**
  * Returns a Tailwind gradient class matching the current weather scene.
- * Used for the weather card's backdrop.
+ * Used for the weather card's backdrop. Must stay in sync with the scene
+ * classification in weather-effects.tsx.
  */
 function getSceneGradient(
   weatherCode: number | undefined,
@@ -393,7 +418,7 @@ function getSceneGradient(
     return "bg-gradient-to-br from-amber-50 via-rose-50 to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950";
   }
 
-  // Rain / storm — cool blue-gray
+  // Rain / storm — cool blue-gray (same day or night)
   if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(weatherCode)) {
     return "bg-gradient-to-br from-sky-100 via-cyan-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950";
   }
@@ -405,22 +430,22 @@ function getSceneGradient(
   if ([45, 48].includes(weatherCode)) {
     return "bg-gradient-to-br from-slate-100 via-gray-50 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900";
   }
-  // Overcast — soft gray
-  if (weatherCode === 3) {
-    return "bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950";
-  }
 
-  // Night scenes
+  // Night scenes (checked BEFORE overcast so night overcast gets dark gradient)
   if (!isDay) {
     if (weatherCode === 0 || weatherCode === 1) {
       // Clear night — deep indigo
       return "bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950";
     }
-    // Cloudy night — slate
+    // Cloudy night / overcast night — dark slate
     return "bg-gradient-to-br from-slate-800 via-slate-700 to-indigo-950 dark:from-slate-950 dark:via-slate-800 dark:to-slate-900";
   }
 
   // Day scenes
+  if (weatherCode === 3) {
+    // Overcast day — soft gray
+    return "bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950";
+  }
   if (weatherCode === 0 || weatherCode === 1) {
     if (temperature >= 32) {
       // Hot sunny day — warm orange

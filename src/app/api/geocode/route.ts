@@ -262,11 +262,12 @@ export async function GET(req: Request) {
     // Strategy 1: try the exact query on Nominatim
     let nominatimResults = await fetchNominatim(q);
 
-    // Strategy 2: if nothing, try a FEW high-probability transliteration
-    // variants on Nominatim. We cap at 5 to avoid timeout — Nominatim's
-    // 1 req/sec policy means each variant adds ~1s of latency.
+    // Strategy 2: if nothing, try a FEW high-probability suffix variants only.
+    // Capped at 2 to keep the search snappy — Nominatim's 1 req/sec policy
+    // means each variant adds ~1s of latency. Users can type alternate
+    // spellings directly for rare names.
     if (nominatimResults.length === 0) {
-      const variants = buildSmartVariants(q).slice(0, 5);
+      const variants = buildSmartVariants(q).slice(0, 2);
       for (const v of variants) {
         try {
           const hits = await fetchNominatim(v);
