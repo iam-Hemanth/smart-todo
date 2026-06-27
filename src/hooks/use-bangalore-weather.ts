@@ -101,26 +101,50 @@ export function useWeather(lat: number, lon: number): WeatherState {
       // Parse hourly forecast: take next 8 hours starting from the current hour.
       const h = json?.weather?.hourly;
       if (h && Array.isArray(h.time) && Array.isArray(h.temperature_2m)) {
-        // Find the index of the current hour (or the next one if exact match isn't found)
-        const nowMs = Date.now();
-        let startIdx = h.time.findIndex(
-          (t: string) => new Date(t).getTime() >= nowMs - 30 * 60 * 1000,
-        );
-        if (startIdx === -1) startIdx = 0;
+        // Open-Meteo returns hourly times as LOCAL time strings like
+        // "2024-01-01T23:00" (no timezone suffix) when timezone=auto.
+        // The response also includes utc_offset_seconds which we use to compute
+        // the current local time for comparison.
+        const utcOffsetSec: number = json?.weather?.utc_offset_seconds ?? 0;
+        const nowUtcMs = Date.now();
+        const localNowMs = nowUtcMs + utcOffsetSec * 1000;
+        // Build a local-time ISO string "YYYY-MM-DDTHH" for the current hour
+        const localNow = new Date(localNowMs);
+        const localHourBucket =
+          localNow.getUTCFullYear() +
+          "-" +
+          String(localNow.getUTCMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(localNow.getUTCDate()).padStart(2, "0") +
+          "T" +
+          String(localNow.getUTCHours()).padStart(2, "0");
+
+        // Find the first hourly bucket >= current local hour.
+        // This ensures we include the current hour (e.g. at 10:43pm, the 22:00
+        // bucket is shown as "Now") rather than skipping ahead.
+        let startIdx = h.time.findIndex((t: string) => {
+          return String(t).slice(0, 13) >= localHourBucket;
+        });
+        if (startIdx === -1) {
+          // All hours are in the past — fall back to the last bucket
+          startIdx = Math.max(0, h.time.length - 8);
+        }
+
         const points: HourlyForecastPoint[] = [];
         for (let i = startIdx; i < Math.min(startIdx + 8, h.time.length); i++) {
           const time = h.time[i] as string;
-          const date = new Date(time);
-          // sunrise/sunset approximation: 6:00–18:00 = day. Open-Meteo doesn't return
-          // hourly is_day, so we estimate. This is good enough for icon selection.
-          const hour = date.getHours();
+          // Parse the local-time string manually to avoid timezone misinterpretation.
+          // Format: "2024-01-01T23:00"
+          const timePart = time.split("T")[1];
+          const hour = Number(timePart.slice(0, 2));
+          // sunrise/sunset approximation: 6:00–18:00 = day
           const isDay = hour >= 6 && hour < 18;
+          const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+          const ampm = hour < 12 ? "AM" : "PM";
+          const hourLabel = `${hour12} ${ampm}`;
           points.push({
             time,
-            hourLabel: date.toLocaleTimeString("en-IN", {
-              hour: "numeric",
-              hour12: true,
-            }),
+            hourLabel,
             temperature: h.temperature_2m[i],
             weatherCode: h.weather_code[i],
             precipitationProbability: h.precipitation_probability?.[i] ?? 0,

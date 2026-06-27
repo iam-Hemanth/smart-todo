@@ -61,21 +61,21 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
       className="relative overflow-hidden rounded-3xl border border-white/40 dark:border-white/10 bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
       aria-label={`${location.name} current weather`}
     >
-      {/* Animated backdrop */}
+      {/* Animated backdrop — scene-aware gradient */}
       <div
         className={cn(
           "absolute inset-0 -z-10 transition-all duration-1000",
-          isRaining
-            ? "bg-gradient-to-br from-sky-100 via-cyan-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900"
-            : data && !data.isDay
-              ? "bg-gradient-to-br from-indigo-100 via-violet-50 to-rose-50 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-900"
-              : "bg-gradient-to-br from-amber-50 via-rose-50 to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950",
+          getSceneGradient(data?.weatherCode, data?.isDay ?? true, data?.temperature ?? 20),
         )}
       />
 
       {/* Weather particle effects */}
       {data && (
-        <WeatherEffects weatherCode={data.weatherCode} isDay={data.isDay} />
+        <WeatherEffects
+          weatherCode={data.weatherCode}
+          isDay={data.isDay}
+          temperature={data.temperature}
+        />
       )}
 
       {/* Floating blobs */}
@@ -379,3 +379,56 @@ function PollutantRow({
 
 // Suppress unused import warnings for icons kept for future use
 void Wind;
+
+/**
+ * Returns a Tailwind gradient class matching the current weather scene.
+ * Used for the weather card's backdrop.
+ */
+function getSceneGradient(
+  weatherCode: number | undefined,
+  isDay: boolean,
+  temperature: number,
+): string {
+  if (weatherCode === undefined) {
+    return "bg-gradient-to-br from-amber-50 via-rose-50 to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950";
+  }
+
+  // Rain / storm — cool blue-gray
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(weatherCode)) {
+    return "bg-gradient-to-br from-sky-100 via-cyan-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950";
+  }
+  // Snow — icy blue-white
+  if ([71, 73, 75, 77, 85, 86].includes(weatherCode)) {
+    return "bg-gradient-to-br from-sky-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-sky-950";
+  }
+  // Fog — muted gray
+  if ([45, 48].includes(weatherCode)) {
+    return "bg-gradient-to-br from-slate-100 via-gray-50 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900";
+  }
+  // Overcast — soft gray
+  if (weatherCode === 3) {
+    return "bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950";
+  }
+
+  // Night scenes
+  if (!isDay) {
+    if (weatherCode === 0 || weatherCode === 1) {
+      // Clear night — deep indigo
+      return "bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950";
+    }
+    // Cloudy night — slate
+    return "bg-gradient-to-br from-slate-800 via-slate-700 to-indigo-950 dark:from-slate-950 dark:via-slate-800 dark:to-slate-900";
+  }
+
+  // Day scenes
+  if (weatherCode === 0 || weatherCode === 1) {
+    if (temperature >= 32) {
+      // Hot sunny day — warm orange
+      return "bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 dark:from-slate-900 dark:via-orange-950/30 dark:to-slate-900";
+    }
+    // Clear sunny day — warm amber
+    return "bg-gradient-to-br from-amber-50 via-rose-50 to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950";
+  }
+  // Partly cloudy day
+  return "bg-gradient-to-br from-sky-50 via-amber-50 to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-sky-950";
+}

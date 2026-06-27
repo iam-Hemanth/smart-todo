@@ -6,6 +6,22 @@ export const dynamic = "force-dynamic";
 const DEFAULT_LAT = 12.9716;
 const DEFAULT_LON = 77.5946;
 
+/**
+ * In-memory cache of the last successful AQI response per location key.
+ * Keyed by rounded lat/lon (2 decimal places ≈ ~1km).
+ * Falls back to this when the live AQI fetch fails, so the UI doesn't
+ * flicker to "—" on transient network errors.
+ *
+ * Note: edge runtime persists this across requests within the same isolate,
+ * but it may be evicted. This is best-effort — not a durable cache.
+ */
+const aqiCache = new Map<string, { data: unknown; ts: number }>();
+const AQI_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min — AQI doesn't change fast
+
+function locationKey(lat: number, lon: number): string {
+  return `${lat.toFixed(2)},${lon.toFixed(2)}`;
+}
+
 async function safeFetchJson(
   url: string,
   retries = 2,
@@ -62,11 +78,33 @@ export async function GET(req: Request) {
     );
   }
 
+  // AQI handling: use live result if ok; otherwise fall back to cached value
+  // (if fresh enough) so the UI doesn't flicker to "—" on transient errors.
+  const key = locationKey(lat, lon);
+  let aqiData: unknown = null;
+  let aqiError: string | null = null;
+  let aqiStale = false;
+
+  if (aqiResult.ok && aqiResult.data) {
+    aqiData = aqiResult.data;
+    // Cache the successful result
+    aqiCache.set(key, { data: aqiResult.data, ts: Date.now() });
+  } else {
+    aqiError = aqiResult.error ?? null;
+    // Try the cache
+    const cached = aqiCache.get(key);
+    if (cached && Date.now() - cached.ts < AQI_CACHE_TTL_MS) {
+      aqiData = cached.data;
+      aqiStale = true;
+    }
+  }
+
   return NextResponse.json(
     {
       weather: weatherResult.data,
-      aqi: aqiResult.ok ? aqiResult.data : null,
-      aqiError: aqiResult.error ?? null,
+      aqi: aqiData,
+      aqiError,
+      aqiStale,
     },
     {
       headers: {

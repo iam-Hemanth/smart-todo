@@ -230,3 +230,9 @@ button, .accent-pill, [style*="--accent-custom"] {
     transform: none;
   }
 }
+
+/* Hide scrollbar on the hourly forecast strip while keeping it scrollable.
+   Used on mobile where the default scrollbar looks ugly. */
+.hourly-scroll::-webkit-scrollbar {
+  display: none;
+}

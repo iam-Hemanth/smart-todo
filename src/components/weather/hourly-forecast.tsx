@@ -25,7 +25,13 @@ export function HourlyForecast({ points, isRainingNow }: HourlyForecastProps) {
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         Next 8 hours
       </p>
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory">
+      <div
+        className="hourly-scroll flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory"
+        style={{
+          scrollbarWidth: "none", // Firefox
+          msOverflowStyle: "none", // IE/Edge
+        }}
+      >
         {points.map((p, i) => {
           const info = getWeatherInfo(p.weatherCode, p.isDay ? 1 : 0);
           const Icon = info.icon;
