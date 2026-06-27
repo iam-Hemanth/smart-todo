@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m&timezone=auto`;
+  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code,precipitation_probability&forecast_days=2&timezone=auto`;
 
   const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide&timezone=auto`;
 
@@ -70,7 +70,8 @@ export async function GET(req: Request) {
     },
     {
       headers: {
-        "Cache-Control": "no-store",
+        // 60s fresh, then revalidate in background for 5 min
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
       },
     },
   );

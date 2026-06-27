@@ -22,6 +22,7 @@ import { format, parseISO } from "date-fns";
 import {
   type Todo,
   useTodoStore,
+  isOverdue,
 } from "@/store/todo-store";
 import {
   COLOR_MAP,
@@ -59,7 +60,10 @@ export function TodoItem({ todo, isRaining }: TodoItemProps) {
 
   const isOutdoor = todo.category === "outdoor";
   const showRainWarning = isOutdoor && isRaining && !todo.completed;
-  const prio = PRIORITY_STYLES[todo.priority];
+  const overdue = isOverdue(todo);
+  // Auto-escalate: overdue tasks display as High priority regardless of stored value
+  const effectivePriority = overdue ? "high" : todo.priority;
+  const prio = PRIORITY_STYLES[effectivePriority];
   const dueInfo = getDueDateInfo(todo.dueDate);
   const colorInfo = COLOR_MAP[todo.color ?? "emerald"];
   const subtaskCount = todo.subtasks?.length ?? 0;
@@ -91,11 +95,12 @@ export function TodoItem({ todo, isRaining }: TodoItemProps) {
       exit={{ opacity: 0, x: -16 }}
       transition={{ type: "spring", stiffness: 350, damping: 28 }}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border transition-all",
+        "group anim-lift relative overflow-hidden rounded-2xl border",
         "border-white/50 dark:border-white/5 bg-white/70 dark:bg-white/[0.03]",
         "hover:shadow-md hover:bg-white dark:hover:bg-white/[0.05]",
         todo.completed && "opacity-65",
         showRainWarning && "ring-1 ring-sky-400/40 bg-sky-50/60 dark:bg-sky-950/20",
+        overdue && !todo.completed && "ring-2 ring-rose-400/50 bg-rose-50/40 dark:bg-rose-950/10",
       )}
     >
       {/* Color label strip */}
@@ -170,7 +175,11 @@ export function TodoItem({ todo, isRaining }: TodoItemProps) {
           {/* Meta chips */}
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <CategoryChip category={todo.category} />
-            <PriorityChip priority={todo.priority} prio={prio} />
+            <PriorityChip
+              priority={effectivePriority}
+              prio={prio}
+              escalated={overdue && effectivePriority !== todo.priority}
+            />
             {todo.dueDate && (
               <span
                 className={cn(
@@ -401,21 +410,31 @@ function CategoryChip({ category }: { category: Todo["category"] }) {
 function PriorityChip({
   priority,
   prio,
+  escalated,
 }: {
   priority: Todo["priority"];
   prio: { dot: string; label: string; text: string };
+  escalated?: boolean;
 }) {
   void priority;
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] font-medium",
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
+        escalated
+          ? "border-rose-400/60 bg-rose-100 dark:bg-rose-950/40 animate-pulse"
+          : "border-border/60 bg-background/60",
         prio.text,
       )}
-      title={`Priority: ${prio.label}`}
+      title={
+        escalated
+          ? `Auto-escalated to High (was lower — task is overdue)`
+          : `Priority: ${prio.label}`
+      }
     >
       <Flag className="h-3 w-3" />
       {prio.label}
+      {escalated && <span className="text-[9px] font-bold">↑</span>}
     </span>
   );
 }

@@ -154,3 +154,79 @@ button, .accent-pill, [style*="--accent-custom"] {
   transition-duration: 250ms;
   transition-timing-function: ease;
 }
+
+/* ===== Aesthetic ambient animations =====
+   Five subtle motion layers that keep the page feeling alive while static.
+   All respect prefers-reduced-motion for accessibility. */
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.015); }
+}
+
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.12); }
+}
+
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(-3deg); }
+}
+
+@keyframes card-hover-lift {
+  to { transform: translateY(-2px); }
+}
+
+/* Applied via utility classes */
+.anim-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.anim-breathe {
+  animation: breathe 3.6s ease-in-out infinite;
+}
+
+.anim-halo {
+  animation: halo-pulse 3.2s ease-in-out infinite;
+}
+
+.anim-float {
+  animation: gentle-float 4s ease-in-out infinite;
+}
+
+.anim-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+.anim-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .anim-shimmer::after,
+  .anim-breathe,
+  .anim-halo,
+  .anim-float {
+    animation: none !important;
+  }
+  .anim-lift:hover {
+    transform: none;
+  }
+}

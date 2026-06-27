@@ -11,6 +11,8 @@ import { TodoList } from "@/components/todos/todo-list";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StreakBadge } from "@/components/streak-badge";
 import { AccentPicker } from "@/components/accent-picker";
+import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
+import { TodaySummaryPill } from "@/components/today-summary-pill";
 import { useStreakWatcher } from "@/hooks/use-streak-watcher";
 import { useConfettiOnAllDone } from "@/hooks/use-confetti-on-all-done";
 
@@ -24,6 +26,32 @@ export default function Home() {
   // Side-effect hooks — record streak, fire confetti
   useStreakWatcher();
   useConfettiOnAllDone();
+
+  const focusAddInput = useCallback(() => {
+    const el = document.querySelector<HTMLInputElement>(
+      'input[aria-label="New task text"]',
+    );
+    el?.focus();
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
+  const focusLocationSearch = useCallback(() => {
+    // The location button lives inside the weather region. Scope the query to that
+    // region to avoid matching the streak badge's popover button.
+    const region = document.querySelector<HTMLElement>(
+      'section[aria-label$="current weather"]',
+    );
+    const btn = region?.querySelector<HTMLButtonElement>(
+      'button[aria-haspopup="dialog"]',
+    );
+    btn?.click();
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>(
+        'input[placeholder="Search any city…"]',
+      );
+      input?.focus();
+    }, 150);
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-amber-50 via-rose-50 to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-foreground transition-colors duration-500">
@@ -66,8 +94,17 @@ export default function Home() {
         >
           <div className="flex items-center gap-3">
             <div className="relative">
+              {/* Soft pulsing halo behind the logo */}
               <div
-                className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-lg"
+                className="anim-halo absolute inset-0 rounded-2xl blur-md"
+                style={{
+                  backgroundColor:
+                    "color-mix(in oklch, var(--accent-custom, #10b981) 40%, transparent)",
+                }}
+                aria-hidden
+              />
+              <div
+                className="relative flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-lg"
                 style={{
                   background:
                     "linear-gradient(to bottom right, var(--accent-custom, #10b981), color-mix(in oklch, var(--accent-custom, #10b981) 65%, #14b8a6))",
@@ -92,7 +129,7 @@ export default function Home() {
               </span>
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
+              <h1 className="anim-breathe text-xl sm:text-2xl font-semibold tracking-tight">
                 Smart To-Do
               </h1>
               <p className="text-xs text-muted-foreground">
@@ -118,7 +155,7 @@ export default function Home() {
           transition={{ delay: 0.1 }}
           className="mt-8 mb-3 flex items-center gap-2"
         >
-          <Sparkles className="h-4 w-4 text-amber-500" />
+          <Sparkles className="anim-float h-4 w-4 text-amber-500" />
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Your tasks
           </h2>
@@ -133,12 +170,22 @@ export default function Home() {
           <AddTodo />
         </motion.div>
 
+        {/* Today summary pill */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          className="mt-4"
+        >
+          <TodaySummaryPill isRaining={isRaining} />
+        </motion.div>
+
         {/* Stats + filters */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mt-5 space-y-4"
+          className="mt-4 space-y-4"
         >
           <StatsBar />
           <FilterTabs />
@@ -157,6 +204,12 @@ export default function Home() {
           </p>
         </footer>
       </div>
+
+      {/* Keyboard shortcuts (⌘K, /, ?) */}
+      <KeyboardShortcuts
+        onFocusAdd={focusAddInput}
+        onFocusLocation={focusLocationSearch}
+      />
     </div>
   );
 }

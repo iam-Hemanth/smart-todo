@@ -19,7 +19,7 @@ export function StatsBar() {
         <div className="flex items-center gap-2">
           <div className="relative h-2 w-32 sm:w-48 overflow-hidden rounded-full bg-muted">
             <motion.div
-              className="absolute inset-y-0 left-0 rounded-full"
+              className="anim-shimmer absolute inset-y-0 left-0 rounded-full"
               style={{
                 background:
                   "linear-gradient(to right, var(--accent-custom, #10b981), color-mix(in oklch, var(--accent-custom, #10b981) 60%, white))",

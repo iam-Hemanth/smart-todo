@@ -15,6 +15,8 @@ interface GeoResult {
   lat: number;
   lon: number;
   timezone?: string;
+  type?: string;
+  importance?: number;
 }
 
 export function LocationSearch() {
@@ -156,13 +158,26 @@ export function LocationSearch() {
 
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.97 }}
-            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute right-0 z-50 mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-popover/95 backdrop-blur-xl shadow-xl"
-          >
+          <>
+            {/* Mobile backdrop — tap to close */}
+            <div
+              className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm sm:hidden"
+              onClick={() => setOpen(false)}
+              aria-hidden
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.97 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className={cn(
+                "z-50 overflow-hidden rounded-2xl border border-border bg-popover/95 backdrop-blur-xl shadow-xl",
+                // Mobile: bottom sheet pinned to viewport bottom with safe margins
+                "fixed inset-x-2 bottom-2 top-auto max-h-[75vh] sm:static sm:inset-x-auto sm:max-h-none",
+                // Desktop: anchored popover on the right
+                "sm:absolute sm:bottom-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[min(380px,calc(100vw-2rem))]",
+              )}
+            >
             <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
               <Search className="h-4 w-4 text-muted-foreground" />
               <input
@@ -243,14 +258,21 @@ export function LocationSearch() {
                   >
                     <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{r.name}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate font-medium">{r.name}</span>
+                        {r.type && (
+                          <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                            {r.type}
+                          </span>
+                        )}
+                      </span>
                       <span className="block truncate text-xs text-muted-foreground">
                         {[r.admin1, r.country].filter(Boolean).join(", ")}
                       </span>
                     </span>
                     {r.name === location.name &&
-                      r.lat === location.lat &&
-                      r.lon === location.lon && (
+                      Math.abs(r.lat - location.lat) < 0.001 &&
+                      Math.abs(r.lon - location.lon) < 0.001 && (
                         <Check className="h-3.5 w-3.5 text-emerald-500" />
                       )}
                   </button>
@@ -258,9 +280,10 @@ export function LocationSearch() {
             </div>
 
             <div className={cn("border-t border-border/60 px-3 py-1.5 text-[10px] text-muted-foreground")}>
-              Powered by Open-Meteo Geocoding
+              Powered by OpenStreetMap · Open-Meteo
             </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

@@ -21,20 +21,33 @@ export interface CurrentAqi {
   sulphur_dioxide: number | null;
 }
 
+export interface HourlyForecastPoint {
+  /** ISO timestamp from the API */
+  time: string;
+  /** Hour of day in local time, e.g. "14:00" */
+  hourLabel: string;
+  temperature: number;
+  weatherCode: number;
+  precipitationProbability: number;
+  isDay: boolean;
+}
+
 export interface WeatherState {
   data: CurrentWeather | null;
   aqi: CurrentAqi | null;
+  hourly: HourlyForecastPoint[];
   loading: boolean;
   error: string | null;
   lastUpdated: number | null;
   refresh: () => void;
 }
 
-const REFETCH_MS = 10 * 60 * 1000; // 10 minutes
+const REFETCH_MS = 60 * 1000; // 1 minute
 
 export function useWeather(lat: number, lon: number): WeatherState {
   const [data, setData] = useState<CurrentWeather | null>(null);
   const [aqi, setAqi] = useState<CurrentAqi | null>(null);
+  const [hourly, setHourly] = useState<HourlyForecastPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
@@ -45,7 +58,8 @@ export function useWeather(lat: number, lon: number): WeatherState {
     try {
       const res = await fetch(
         `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`,
-        { cache: "no-store" },
+        // Respect the route's Cache-Control (60s fresh, 5m stale-while-revalidate)
+        { cache: "default" },
       );
       if (!res.ok) {
         throw new Error(`Request failed with ${res.status}`);
@@ -84,6 +98,40 @@ export function useWeather(lat: number, lon: number): WeatherState {
           : null,
       );
 
+      // Parse hourly forecast: take next 8 hours starting from the current hour.
+      const h = json?.weather?.hourly;
+      if (h && Array.isArray(h.time) && Array.isArray(h.temperature_2m)) {
+        // Find the index of the current hour (or the next one if exact match isn't found)
+        const nowMs = Date.now();
+        let startIdx = h.time.findIndex(
+          (t: string) => new Date(t).getTime() >= nowMs - 30 * 60 * 1000,
+        );
+        if (startIdx === -1) startIdx = 0;
+        const points: HourlyForecastPoint[] = [];
+        for (let i = startIdx; i < Math.min(startIdx + 8, h.time.length); i++) {
+          const time = h.time[i] as string;
+          const date = new Date(time);
+          // sunrise/sunset approximation: 6:00–18:00 = day. Open-Meteo doesn't return
+          // hourly is_day, so we estimate. This is good enough for icon selection.
+          const hour = date.getHours();
+          const isDay = hour >= 6 && hour < 18;
+          points.push({
+            time,
+            hourLabel: date.toLocaleTimeString("en-IN", {
+              hour: "numeric",
+              hour12: true,
+            }),
+            temperature: h.temperature_2m[i],
+            weatherCode: h.weather_code[i],
+            precipitationProbability: h.precipitation_probability?.[i] ?? 0,
+            isDay,
+          });
+        }
+        setHourly(points);
+      } else {
+        setHourly([]);
+      }
+
       setLastUpdated(Date.now());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load weather");
@@ -98,5 +146,5 @@ export function useWeather(lat: number, lon: number): WeatherState {
     return () => clearInterval(id);
   }, [fetchData]);
 
-  return { data, aqi, loading, error, lastUpdated, refresh: fetchData };
+  return { data, aqi, hourly, loading, error, lastUpdated, refresh: fetchData };
 }

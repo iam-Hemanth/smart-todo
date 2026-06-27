@@ -18,6 +18,7 @@ import { getAqiInfo, type AqiInfo } from "@/lib/aqi";
 import { useLocationStore } from "@/store/location-store";
 import { LocationSearch } from "./weather/location-search";
 import { WeatherEffects } from "./weather/weather-effects";
+import { HourlyForecast } from "./weather/hourly-forecast";
 import { cn } from "@/lib/utils";
 import {
   HoverCard,
@@ -39,7 +40,7 @@ function formatTime(ts: number | null): string {
 
 export function WeatherCard({ onRainChange }: WeatherCardProps) {
   const location = useLocationStore((s) => s.location);
-  const { data, aqi, loading, error, lastUpdated, refresh } = useWeather(
+  const { data, aqi, hourly, loading, error, lastUpdated, refresh } = useWeather(
     location.lat,
     location.lon,
   );
@@ -210,6 +211,11 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
           )}
         </AnimatePresence>
 
+        {/* Hourly forecast strip */}
+        {hourly.length > 0 && (
+          <HourlyForecast points={hourly} isRainingNow={isRaining} />
+        )}
+
         {/* Rain banner */}
         <AnimatePresence>
           {isRaining && (
@@ -240,7 +246,13 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
         </AnimatePresence>
 
         <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Powered by Open-Meteo · Air Quality</span>
+          <span className="flex items-center gap-1.5">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </span>
+            Live · updates every minute
+          </span>
           <span>Updated {formatTime(lastUpdated)}</span>
         </div>
       </div>
