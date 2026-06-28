@@ -11,12 +11,9 @@ interface WeatherEffectsProps {
 }
 
 /**
- * Premium weather scenes with:
- *  - 5 distinct cloud shape variants (no repetition)
- *  - Seamless cloud drift (fade-in at edges, no teleporting)
- *  - Instant animation start (minimal delay)
- *  - Proper 3D volume via vertical gradients + highlights + shadows
- *  - SVG turbulence filters for organic edges
+ * Premium weather scenes using CSS-blurred circle clouds (Apple Weather technique)
+ * instead of SVG turbulence filters. Each cloud is a cluster of 5-7 overlapping
+ * white circles with heavy blur for naturally soft, fluffy edges.
  */
 export function WeatherEffects({ weatherCode, isDay, temperature }: WeatherEffectsProps) {
   const scene = classifyScene(weatherCode, isDay, temperature);
@@ -26,21 +23,6 @@ export function WeatherEffects({ weatherCode, isDay, temperature }: WeatherEffec
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       <svg className="absolute h-0 w-0" aria-hidden>
         <defs>
-          <filter id={`${filterId}-cs1`} x="-30%" y="-30%" width="160%" height="160%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="3" />
-            <feDisplacementMap in="SourceGraphic" scale="40" />
-            <feGaussianBlur stdDeviation="3" />
-          </filter>
-          <filter id={`${filterId}-cs2`} x="-30%" y="-30%" width="160%" height="160%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.018 0.025" numOctaves="2" seed="7" />
-            <feDisplacementMap in="SourceGraphic" scale="30" />
-            <feGaussianBlur stdDeviation="2" />
-          </filter>
-          <filter id={`${filterId}-cs3`} x="-30%" y="-30%" width="160%" height="160%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.015 0.020" numOctaves="3" seed="11" />
-            <feDisplacementMap in="SourceGraphic" scale="35" />
-            <feGaussianBlur stdDeviation="2.5" />
-          </filter>
           <radialGradient id={`${filterId}-sun-core`} cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#fffbeb" stopOpacity="1" />
             <stop offset="30%" stopColor="#fef3c7" stopOpacity="1" />
@@ -68,8 +50,8 @@ export function WeatherEffects({ weatherCode, isDay, temperature }: WeatherEffec
       {scene === "cloudy-night" && <CloudyNightScene filterId={filterId} />}
       {scene === "clear-sunny" && <ClearSunnyDayScene filterId={filterId} />}
       {scene === "hot-sunny" && <HotSunnyDayScene filterId={filterId} />}
-      {scene === "partly-cloudy-day" && <PartlyCloudyDayScene filterId={filterId} />}
-      {scene === "overcast-day" && <OvercastDayScene filterId={filterId} />}
+      {scene === "partly-cloudy-day" && <PartlyCloudyDayScene />}
+      {scene === "overcast-day" && <OvercastDayScene />}
       {scene === "fog" && <FogScene />}
       {(scene === "rain" || scene === "storm") && (
         <RainScene isStorm={scene === "storm"} />
@@ -98,79 +80,44 @@ function classifyScene(weatherCode: number, isDay: boolean, temperature: number)
   return isDay ? "clear-sunny" : "clear-night";
 }
 
-/* ============ 5 distinct cloud shape variants ============ */
-type CloudVariant = 0 | 1 | 2 | 3 | 4;
+/* ============ CSS-Blurred Cloud System ============
+   Each cloud is a cluster of 5-7 overlapping white circles with heavy blur.
+   This produces naturally soft, fluffy edges without SVG filters.
+   5 distinct shape variants ensure variety. */
 
-function CloudShape0({ gradId, hlId }: { gradId: string; hlId: string }) {
-  // Wide spread, tall center puff
-  return (
-    <svg width="240" height="110" viewBox="0 0 240 110">
-      <ellipse cx="50" cy="68" rx="48" ry="32" fill={`url(#${gradId})`} />
-      <ellipse cx="105" cy="48" rx="58" ry="40" fill={`url(#${gradId})`} />
-      <ellipse cx="165" cy="55" rx="52" ry="35" fill={`url(#${gradId})`} />
-      <ellipse cx="205" cy="70" rx="32" ry="22" fill={`url(#${gradId})`} />
-      <ellipse cx="120" cy="38" rx="55" ry="14" fill={`url(#${hlId})`} />
-      <ellipse cx="130" cy="92" rx="110" ry="9" fill="rgba(51,65,85,0.22)" />
-    </svg>
-  );
+interface CloudPuff {
+  cx: number; // center x (% of cloud width)
+  cy: number; // center y (% of cloud height)
+  r: number;  // radius (% of cloud width)
 }
 
-function CloudShape1({ gradId, hlId }: { gradId: string; hlId: string }) {
-  // Compact, rounded lumpy shape
-  return (
-    <svg width="200" height="100" viewBox="0 0 200 100">
-      <ellipse cx="55" cy="60" rx="45" ry="32" fill={`url(#${gradId})`} />
-      <ellipse cx="100" cy="45" rx="48" ry="36" fill={`url(#${gradId})`} />
-      <ellipse cx="145" cy="55" rx="42" ry="30" fill={`url(#${gradId})`} />
-      <ellipse cx="100" cy="35" rx="45" ry="12" fill={`url(#${hlId})`} />
-      <ellipse cx="100" cy="82" rx="90" ry="8" fill="rgba(51,65,85,0.22)" />
-    </svg>
-  );
-}
-
-function CloudShape2({ gradId, hlId }: { gradId: string; hlId: string }) {
-  // Long stretched cloud with multiple small puffs
-  return (
-    <svg width="280" height="90" viewBox="0 0 280 90">
-      <ellipse cx="40" cy="55" rx="38" ry="26" fill={`url(#${gradId})`} />
-      <ellipse cx="85" cy="48" rx="42" ry="30" fill={`url(#${gradId})`} />
-      <ellipse cx="135" cy="52" rx="45" ry="28" fill={`url(#${gradId})`} />
-      <ellipse cx="185" cy="50" rx="40" ry="26" fill={`url(#${gradId})`} />
-      <ellipse cx="235" cy="56" rx="35" ry="24" fill={`url(#${gradId})`} />
-      <ellipse cx="140" cy="38" rx="100" ry="10" fill={`url(#${hlId})`} />
-      <ellipse cx="140" cy="76" rx="120" ry="7" fill="rgba(51,65,85,0.22)" />
-    </svg>
-  );
-}
-
-function CloudShape3({ gradId, hlId }: { gradId: string; hlId: string }) {
-  // Tall, towering cloud
-  return (
-    <svg width="180" height="130" viewBox="0 0 180 130">
-      <ellipse cx="55" cy="80" rx="45" ry="30" fill={`url(#${gradId})`} />
-      <ellipse cx="95" cy="60" rx="48" ry="38" fill={`url(#${gradId})`} />
-      <ellipse cx="125" cy="45" rx="38" ry="32" fill={`url(#${gradId})`} />
-      <ellipse cx="140" cy="70" rx="32" ry="26" fill={`url(#${gradId})`} />
-      <ellipse cx="100" cy="40" rx="48" ry="14" fill={`url(#${hlId})`} />
-      <ellipse cx="95" cy="105" rx="90" ry="8" fill="rgba(51,65,85,0.22)" />
-    </svg>
-  );
-}
-
-function CloudShape4({ gradId, hlId }: { gradId: string; hlId: string }) {
-  // Small wispy cloud
-  return (
-    <svg width="160" height="80" viewBox="0 0 160 80">
-      <ellipse cx="45" cy="48" rx="38" ry="24" fill={`url(#${gradId})`} />
-      <ellipse cx="85" cy="40" rx="42" ry="28" fill={`url(#${gradId})`} />
-      <ellipse cx="120" cy="50" rx="34" ry="22" fill={`url(#${gradId})`} />
-      <ellipse cx="80" cy="30" rx="40" ry="10" fill={`url(#${hlId})`} />
-      <ellipse cx="80" cy="66" rx="70" ry="6" fill="rgba(51,65,85,0.22)" />
-    </svg>
-  );
-}
-
-const CLOUD_SHAPES = [CloudShape0, CloudShape1, CloudShape2, CloudShape3, CloudShape4];
+const CLOUD_VARIANTS: CloudPuff[][] = [
+  // Variant 0: wide spread, tall center
+  [
+    { cx: 20, cy: 65, r: 30 }, { cx: 45, cy: 45, r: 38 }, { cx: 70, cy: 50, r: 35 },
+    { cx: 88, cy: 68, r: 25 }, { cx: 50, cy: 30, r: 28 },
+  ],
+  // Variant 1: compact round
+  [
+    { cx: 25, cy: 60, r: 28 }, { cx: 50, cy: 45, r: 35 }, { cx: 75, cy: 55, r: 30 },
+    { cx: 50, cy: 30, r: 25 },
+  ],
+  // Variant 2: long stretched
+  [
+    { cx: 12, cy: 58, r: 24 }, { cx: 30, cy: 50, r: 28 }, { cx: 50, cy: 54, r: 30 },
+    { cx: 70, cy: 50, r: 27 }, { cx: 88, cy: 58, r: 23 }, { cx: 50, cy: 38, r: 20 },
+  ],
+  // Variant 3: tall towering
+  [
+    { cx: 28, cy: 72, r: 28 }, { cx: 52, cy: 55, r: 35 }, { cx: 72, cy: 40, r: 30 },
+    { cx: 82, cy: 62, r: 25 }, { cx: 55, cy: 28, r: 24 },
+  ],
+  // Variant 4: small wispy
+  [
+    { cx: 25, cy: 55, r: 26 }, { cx: 50, cy: 42, r: 32 }, { cx: 75, cy: 52, r: 26 },
+    { cx: 50, cy: 28, r: 20 },
+  ],
+];
 
 interface CloudData {
   id: number;
@@ -179,83 +126,132 @@ interface CloudData {
   duration: number;
   opacity: number;
   layer: number;
-  variant: CloudVariant;
-  filterId: string;
+  variant: number;
+  width: number;
+  height: number;
+}
+
+function useClouds(count: number): CloudData[] {
+  return useMemo(() => Array.from({ length: count }, (_, i) => {
+    const layer = i < count / 2 ? 0 : 1;
+    const variant = i % 5;
+    return {
+      id: i,
+      top: 3 + Math.random() * 42,
+      scale: layer === 0 ? 0.55 + Math.random() * 0.3 : 0.85 + Math.random() * 0.5,
+      duration: layer === 0 ? 32 + Math.random() * 14 : 18 + Math.random() * 10,
+      opacity: layer === 0 ? 0.3 + Math.random() * 0.15 : 0.6 + Math.random() * 0.2,
+      layer,
+      variant,
+      width: 200 + variant * 20,
+      height: 100,
+    };
+  }), [count]);
 }
 
 /**
- * Cloud data with 5 shape variants cycling through.
- * Duration is the full loop time; clouds travel from -30% to 130% (off-screen)
- * so there's no visible teleport — they fade off one side before reappearing.
+ * A single cloud rendered as CSS-blurred circle cluster.
+ * Puffs are white circles with blur; a shadow div sits underneath for depth.
  */
-function useClouds(count: number, filterPrefix: string): CloudData[] {
-  return useMemo(() => {
-    return Array.from({ length: count }, (_, i) => {
-      const layer = i < count / 2 ? 0 : 1;
-      const variant = (i % 5) as CloudVariant;
-      return {
-        id: i,
-        top: 5 + Math.random() * 45,
-        scale: layer === 0 ? 0.65 + Math.random() * 0.35 : 1.0 + Math.random() * 0.6,
-        duration: layer === 0 ? 35 + Math.random() * 15 : 20 + Math.random() * 12,
-        // Minimal stagger so animation starts immediately
-        opacity: layer === 0 ? 0.25 + Math.random() * 0.15 : 0.55 + Math.random() * 0.2,
-        layer,
-        variant,
-        filterId: layer === 0 ? `${filterPrefix}-cs1` : variant % 2 === 0 ? `${filterPrefix}-cs2` : `${filterPrefix}-cs3`,
-      };
-    });
-  }, [count, filterPrefix]);
-}
-
-function DriftingCloud({ cloud, filterPrefix, gradPrefix }: { cloud: CloudData; filterPrefix: string; gradPrefix: string }) {
-  const Shape = CLOUD_SHAPES[cloud.variant];
-  const gradId = `${gradPrefix}-${cloud.id}`;
-  const hlId = `${gradPrefix}-hl-${cloud.id}`;
+function BlurredCloud({
+  data,
+  color = "white",
+  shadowColor = "rgba(71,85,105,0.25)",
+  highlight = true,
+}: {
+  data: CloudData;
+  color?: string;
+  shadowColor?: string;
+  highlight?: boolean;
+}) {
+  const puffs = CLOUD_VARIANTS[data.variant];
+  const w = data.width;
+  const h = data.height;
 
   return (
     <motion.div
+      key={data.id}
       className="absolute"
       style={{
-        top: `${cloud.top}%`,
-        opacity: cloud.opacity,
-        transform: `scale(${cloud.scale})`,
+        top: `${data.top}%`,
+        width: `${w}px`,
+        height: `${h}px`,
+        opacity: data.opacity,
+        transform: `scale(${data.scale})`,
       }}
-      initial={{ x: "-35%" }}
-      animate={{ x: "135%" }}
+      initial={{ x: "-500px", opacity: 0 }}
+      animate={{
+        x: `calc(100% + 500px)`,
+        opacity: [0, data.opacity, data.opacity, 0],
+      }}
       transition={{
-        duration: cloud.duration,
-        delay: cloud.id * 1.5, // very small stagger so it starts immediately
-        repeat: Infinity,
-        ease: "linear",
-        repeatType: "loop",
+        x: { duration: data.duration, repeat: Infinity, ease: "linear" },
+        opacity: {
+          duration: data.duration,
+          times: [0, 0.08, 0.92, 1],
+          repeat: Infinity,
+          ease: "linear",
+        },
       }}
     >
-      <svg width="0" height="0" style={{ position: "absolute" }}>
-        <defs>
-          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-            <stop offset="30%" stopColor="#f8fafc" stopOpacity="0.98" />
-            <stop offset="65%" stopColor="#e2e8f0" stopOpacity="0.95" />
-            <stop offset="90%" stopColor="#94a3b8" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#64748b" stopOpacity="0.75" />
-          </linearGradient>
-          <radialGradient id={hlId} cx="40%" cy="20%" r="45%">
-            <stop offset="0%" stopColor="rgba(254,243,199,0.5)" />
-            <stop offset="100%" stopColor="rgba(254,243,199,0)" />
-          </radialGradient>
-        </defs>
-      </svg>
-      <div style={{ filter: `url(#${cloud.filterId})` }}>
-        <Shape gradId={gradId} hlId={hlId} />
+      {/* Shadow layer — gray, offset down */}
+      <div className="absolute inset-0" style={{ filter: "blur(12px)" }}>
+        {puffs.map((p, i) => (
+          <div
+            key={`sh-${i}`}
+            className="absolute rounded-full"
+            style={{
+              left: `${p.cx - p.r}%`,
+              top: `${p.cy - p.r + 8}%`,
+              width: `${p.r * 2}%`,
+              height: `${p.r * 2}%`,
+              backgroundColor: shadowColor,
+            }}
+          />
+        ))}
       </div>
+
+      {/* Main cloud body — white circles with heavy blur for soft edges */}
+      <div className="absolute inset-0" style={{ filter: "blur(6px)" }}>
+        {puffs.map((p, i) => (
+          <div
+            key={`body-${i}`}
+            className="absolute rounded-full"
+            style={{
+              left: `${p.cx - p.r}%`,
+              top: `${p.cy - p.r}%`,
+              width: `${p.r * 2}%`,
+              height: `${p.r * 2}%`,
+              backgroundColor: color,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Highlight layer — brighter white on top, less blur for definition */}
+      {highlight && (
+        <div className="absolute inset-0" style={{ filter: "blur(3px)" }}>
+          {puffs.map((p, i) => (
+            <div
+              key={`hl-${i}`}
+              className="absolute rounded-full"
+              style={{
+                left: `${p.cx - p.r * 0.6}%`,
+                top: `${p.cy - p.r * 0.9}%`,
+                width: `${p.r * 1.2}%`,
+                height: `${p.r * 0.8}%`,
+                backgroundColor: "rgba(255,255,255,0.6)",
+              }}
+            />
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }
 
 /* ============ Stars ============ */
 interface Star { id: number; left: number; top: number; size: number; delay: number; duration: number; layer: number; }
-
 function useStars(count: number): Star[] {
   return useMemo(() => Array.from({ length: count }, (_, i) => {
     const layer = i % 3;
@@ -310,7 +306,7 @@ function ClearNightScene({ filterId }: { filterId: string }) {
 /* ============ CLOUDY NIGHT ============ */
 function CloudyNightScene({ filterId }: { filterId: string }) {
   const stars = useStars(60);
-  const clouds = useClouds(7, filterId);
+  const clouds = useClouds(7);
   const moonGlowUrl = `url(#${filterId}-moon-glow)`;
 
   return (
@@ -342,81 +338,17 @@ function CloudyNightScene({ filterId }: { filterId: string }) {
           transition={{ duration: s.duration, delay: s.delay, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }} />
       ))}
 
-      {/* Dark moonlit clouds */}
+      {/* Dark moonlit clouds — CSS blurred clusters */}
       {clouds.map((c) => (
-        <motion.div key={c.id} className="absolute"
-          style={{ top: `${c.top}%`, opacity: Math.min(c.opacity + 0.15, 0.9), transform: `scale(${c.scale})` }}
-          initial={{ x: "-35%" }} animate={{ x: "135%" }}
-          transition={{ duration: c.duration, delay: c.id * 1.5, repeat: Infinity, ease: "linear" }}>
-          <svg width="0" height="0" style={{ position: "absolute" }}>
-            <defs>
-              <linearGradient id={`nc-${c.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="rgba(148,163,184,0.85)" />
-                <stop offset="50%" stopColor="rgba(100,116,139,0.8)" />
-                <stop offset="100%" stopColor="rgba(51,65,85,0.75)" />
-              </linearGradient>
-              <radialGradient id={`nc-hl-${c.id}`} cx="65%" cy="20%" r="40%">
-                <stop offset="0%" stopColor="rgba(254,243,199,0.2)" />
-                <stop offset="100%" stopColor="rgba(254,243,199,0)" />
-              </radialGradient>
-            </defs>
-          </svg>
-          <div style={{ filter: `url(#${c.filterId})` }}>
-            <NightCloudShape id={c.id} />
-          </div>
-        </motion.div>
+        <BlurredCloud
+          key={c.id}
+          data={c}
+          color="rgba(100,116,139,0.85)"
+          shadowColor="rgba(30,41,59,0.5)"
+          highlight={false}
+        />
       ))}
     </>
-  );
-}
-
-function NightCloudShape({ id }: { id: number }) {
-  const variant = id % 5;
-  const gradId = `nc-${id}`;
-  const hlId = `nc-hl-${id}`;
-  if (variant === 0) return (
-    <svg width="240" height="110" viewBox="0 0 240 110">
-      <ellipse cx="50" cy="68" rx="48" ry="32" fill={`url(#${gradId})`} />
-      <ellipse cx="105" cy="48" rx="58" ry="40" fill={`url(#${gradId})`} />
-      <ellipse cx="165" cy="55" rx="52" ry="35" fill={`url(#${gradId})`} />
-      <ellipse cx="205" cy="70" rx="32" ry="22" fill={`url(#${gradId})`} />
-      <ellipse cx="120" cy="38" rx="55" ry="14" fill={`url(#${hlId})`} />
-    </svg>
-  );
-  if (variant === 1) return (
-    <svg width="200" height="100" viewBox="0 0 200 100">
-      <ellipse cx="55" cy="60" rx="45" ry="32" fill={`url(#${gradId})`} />
-      <ellipse cx="100" cy="45" rx="48" ry="36" fill={`url(#${gradId})`} />
-      <ellipse cx="145" cy="55" rx="42" ry="30" fill={`url(#${gradId})`} />
-      <ellipse cx="100" cy="35" rx="45" ry="12" fill={`url(#${hlId})`} />
-    </svg>
-  );
-  if (variant === 2) return (
-    <svg width="280" height="90" viewBox="0 0 280 90">
-      <ellipse cx="40" cy="55" rx="38" ry="26" fill={`url(#${gradId})`} />
-      <ellipse cx="85" cy="48" rx="42" ry="30" fill={`url(#${gradId})`} />
-      <ellipse cx="135" cy="52" rx="45" ry="28" fill={`url(#${gradId})`} />
-      <ellipse cx="185" cy="50" rx="40" ry="26" fill={`url(#${gradId})`} />
-      <ellipse cx="235" cy="56" rx="35" ry="24" fill={`url(#${gradId})`} />
-      <ellipse cx="140" cy="38" rx="100" ry="10" fill={`url(#${hlId})`} />
-    </svg>
-  );
-  if (variant === 3) return (
-    <svg width="180" height="130" viewBox="0 0 180 130">
-      <ellipse cx="55" cy="80" rx="45" ry="30" fill={`url(#${gradId})`} />
-      <ellipse cx="95" cy="60" rx="48" ry="38" fill={`url(#${gradId})`} />
-      <ellipse cx="125" cy="45" rx="38" ry="32" fill={`url(#${gradId})`} />
-      <ellipse cx="140" cy="70" rx="32" ry="26" fill={`url(#${gradId})`} />
-      <ellipse cx="100" cy="40" rx="48" ry="14" fill={`url(#${hlId})`} />
-    </svg>
-  );
-  return (
-    <svg width="160" height="80" viewBox="0 0 160 80">
-      <ellipse cx="45" cy="48" rx="38" ry="24" fill={`url(#${gradId})`} />
-      <ellipse cx="85" cy="40" rx="42" ry="28" fill={`url(#${gradId})`} />
-      <ellipse cx="120" cy="50" rx="34" ry="22" fill={`url(#${gradId})`} />
-      <ellipse cx="80" cy="30" rx="40" ry="10" fill={`url(#${hlId})`} />
-    </svg>
   );
 }
 
@@ -499,43 +431,43 @@ function HotSunnyDayScene({ filterId }: { filterId: string }) {
 }
 
 /* ============ PARTLY CLOUDY DAY ============ */
-function PartlyCloudyDayScene({ filterId }: { filterId: string }) {
-  const clouds = useClouds(7, filterId);
+function PartlyCloudyDayScene() {
+  const clouds = useClouds(7);
 
   return (
     <>
       <div className="absolute inset-0 bg-gradient-to-b from-sky-400 via-sky-300 to-sky-200 dark:from-sky-700 dark:via-sky-600 dark:to-sky-500" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_85%_10%,rgba(254,243,199,0.2),transparent_45%)]" />
 
-      <motion.div className="absolute right-6 top-5" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 5, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}>
-        <svg className="absolute -inset-16" viewBox="0 0 220 220" style={{ filter: "blur(12px)" }}>
-          <circle cx="110" cy="110" r="85" fill={`url(#${filterId}-sun-core)`} opacity="0.45" />
-        </svg>
-        <svg className="absolute -inset-6" viewBox="0 0 160 160" style={{ filter: "blur(4px)" }}>
-          <circle cx="80" cy="80" r="60" fill={`url(#${filterId}-sun-core)`} opacity="0.75" />
-        </svg>
-        <div className="relative h-14 w-14 rounded-full"
-          style={{ background: `radial-gradient(circle at 40% 40%, #ffffff 0%, #fffbeb 20%, #fef3c7 45%, #fbbf24 70%, rgba(245,158,11,0) 100%)`, boxShadow: "0 0 45px rgba(254,243,199,0.7), 0 0 80px rgba(251,191,36,0.3)" }} />
-      </motion.div>
+      {/* Sun peeking top-right */}
+      <SunCore size={56} top={20} right={24} />
 
+      {/* Fluffy white clouds — CSS blurred clusters */}
       {clouds.map((c) => (
-        <DriftingCloud key={c.id} cloud={c} filterPrefix={filterId} gradPrefix={`pc-${filterId}`} />
+        <BlurredCloud key={c.id} data={c} />
       ))}
     </>
   );
 }
 
 /* ============ OVERCAST DAY ============ */
-function OvercastDayScene({ filterId }: { filterId: string }) {
-  const clouds = useClouds(8, filterId);
+function OvercastDayScene() {
+  const clouds = useClouds(8);
 
   return (
     <>
       <div className="absolute inset-0 bg-gradient-to-b from-slate-400 via-slate-300 to-slate-200 dark:from-slate-600 dark:via-slate-500 dark:to-slate-400" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(241,245,249,0.25),transparent_60%)]" />
 
+      {/* Dense gray clouds */}
       {clouds.map((c) => (
-        <OvercastDriftingCloud key={c.id} cloud={c} filterPrefix={filterId} />
+        <BlurredCloud
+          key={c.id}
+          data={{ ...c, top: c.top * 0.7, scale: c.scale * 1.3, opacity: Math.min(c.opacity + 0.3, 0.95) }}
+          color="rgba(226,232,240,0.95)"
+          shadowColor="rgba(71,85,105,0.4)"
+          highlight={false}
+        />
       ))}
 
       <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-300/20 to-transparent" />
@@ -543,109 +475,58 @@ function OvercastDayScene({ filterId }: { filterId: string }) {
   );
 }
 
-function OvercastDriftingCloud({ cloud, filterPrefix }: { cloud: CloudData; filterPrefix: string }) {
-  const variant = cloud.variant;
-  const gradId = `oc-${filterPrefix}-${cloud.id}`;
-  const hlId = `oc-hl-${filterPrefix}-${cloud.id}`;
-
+/* ============ Sun core helper ============ */
+function SunCore({ size, top, right }: { size: number; top: number; right: number }) {
+  const filterId = useId();
   return (
-    <motion.div className="absolute"
-      style={{ top: `${cloud.top * 0.65}%`, opacity: Math.min(cloud.opacity + 0.35, 0.95), transform: `scale(${cloud.scale * 1.3})` }}
-      initial={{ x: "-35%" }} animate={{ x: "135%" }}
-      transition={{ duration: cloud.duration * 1.1, delay: cloud.id * 1.5, repeat: Infinity, ease: "linear" }}>
-      <svg width="0" height="0" style={{ position: "absolute" }}>
+    <motion.div
+      className="absolute"
+      style={{ top: `${top}px`, right: `${right}px` }}
+      animate={{ scale: [1, 1.05, 1] }}
+      transition={{ duration: 5, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
+    >
+      <svg className="absolute -inset-16" viewBox="0 0 220 220" style={{ filter: "blur(12px)" }}>
+        <circle cx="110" cy="110" r="85" fill={`url(#${filterId}-sc)`} opacity="0.45" />
+      </svg>
+      <svg className="absolute -inset-6" viewBox="0 0 160 160" style={{ filter: "blur(4px)" }}>
+        <circle cx="80" cy="80" r="60" fill={`url(#${filterId}-sc)`} opacity="0.75" />
+      </svg>
+      <svg className="absolute h-0 w-0">
         <defs>
-          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#f8fafc" stopOpacity="0.98" />
-            <stop offset="35%" stopColor="#e2e8f0" stopOpacity="0.95" />
-            <stop offset="70%" stopColor="#94a3b8" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#475569" stopOpacity="0.8" />
-          </linearGradient>
-          <radialGradient id={hlId} cx="50%" cy="15%" r="50%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+          <radialGradient id={`${filterId}-sc`} cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#fffbeb" stopOpacity="1" />
+            <stop offset="30%" stopColor="#fef3c7" stopOpacity="1" />
+            <stop offset="60%" stopColor="#fbbf24" stopOpacity="0.9" />
+            <stop offset="85%" stopColor="#f59e0b" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
           </radialGradient>
         </defs>
       </svg>
-      <div style={{ filter: `url(#${cloud.filterId})` }}>
-        <OvercastCloudShape variant={variant} gradId={gradId} hlId={hlId} />
-      </div>
+      <div
+        className="relative rounded-full"
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          background: `radial-gradient(circle at 40% 40%, #ffffff 0%, #fffbeb 20%, #fef3c7 45%, #fbbf24 70%, rgba(245,158,11,0) 100%)`,
+          boxShadow: "0 0 45px rgba(254,243,199,0.7), 0 0 80px rgba(251,191,36,0.3)",
+        }}
+      />
     </motion.div>
   );
 }
 
-function OvercastCloudShape({ variant, gradId, hlId }: { variant: number; gradId: string; hlId: string }) {
-  if (variant === 0) return (
-    <svg width="300" height="120" viewBox="0 0 300 120">
-      <ellipse cx="55" cy="70" rx="52" ry="35" fill={`url(#${gradId})`} />
-      <ellipse cx="120" cy="52" rx="62" ry="42" fill={`url(#${gradId})`} />
-      <ellipse cx="185" cy="58" rx="55" ry="38" fill={`url(#${gradId})`} />
-      <ellipse cx="250" cy="68" rx="42" ry="30" fill={`url(#${gradId})`} />
-      <ellipse cx="150" cy="40" rx="100" ry="18" fill={`url(#${hlId})`} />
-      <ellipse cx="155" cy="98" rx="140" ry="10" fill="rgba(51,65,85,0.25)" />
-    </svg>
-  );
-  if (variant === 1) return (
-    <svg width="260" height="110" viewBox="0 0 260 110">
-      <ellipse cx="50" cy="65" rx="48" ry="34" fill={`url(#${gradId})`} />
-      <ellipse cx="110" cy="50" rx="55" ry="40" fill={`url(#${gradId})`} />
-      <ellipse cx="175" cy="55" rx="50" ry="36" fill={`url(#${gradId})`} />
-      <ellipse cx="225" cy="65" rx="35" ry="25" fill={`url(#${gradId})`} />
-      <ellipse cx="135" cy="38" rx="85" ry="15" fill={`url(#${hlId})`} />
-      <ellipse cx="135" cy="92" rx="115" ry="9" fill="rgba(51,65,85,0.25)" />
-    </svg>
-  );
-  if (variant === 2) return (
-    <svg width="340" height="100" viewBox="0 0 340 100">
-      <ellipse cx="45" cy="60" rx="40" ry="28" fill={`url(#${gradId})`} />
-      <ellipse cx="95" cy="52" rx="45" ry="32" fill={`url(#${gradId})`} />
-      <ellipse cx="150" cy="55" rx="48" ry="30" fill={`url(#${gradId})`} />
-      <ellipse cx="210" cy="52" rx="42" ry="28" fill={`url(#${gradId})`} />
-      <ellipse cx="270" cy="58" rx="38" ry="26" fill={`url(#${gradId})`} />
-      <ellipse cx="160" cy="42" rx="120" ry="12" fill={`url(#${hlId})`} />
-      <ellipse cx="160" cy="82" rx="150" ry="8" fill="rgba(51,65,85,0.25)" />
-    </svg>
-  );
-  if (variant === 3) return (
-    <svg width="220" height="140" viewBox="0 0 220 140">
-      <ellipse cx="60" cy="88" rx="48" ry="32" fill={`url(#${gradId})`} />
-      <ellipse cx="105" cy="65" rx="52" ry="40" fill={`url(#${gradId})`} />
-      <ellipse cx="140" cy="48" rx="42" ry="35" fill={`url(#${gradId})`} />
-      <ellipse cx="165" cy="75" rx="38" ry="28" fill={`url(#${gradId})`} />
-      <ellipse cx="110" cy="42" rx="55" ry="16" fill={`url(#${hlId})`} />
-      <ellipse cx="110" cy="115" rx="100" ry="9" fill="rgba(51,65,85,0.25)" />
-    </svg>
-  );
-  return (
-    <svg width="200" height="90" viewBox="0 0 200 90">
-      <ellipse cx="50" cy="52" rx="42" ry="26" fill={`url(#${gradId})`} />
-      <ellipse cx="95" cy="44" rx="46" ry="30" fill={`url(#${gradId})`} />
-      <ellipse cx="140" cy="54" rx="40" ry="24" fill={`url(#${gradId})`} />
-      <ellipse cx="95" cy="34" rx="50" ry="12" fill={`url(#${hlId})`} />
-      <ellipse cx="95" cy="76" rx="85" ry="7" fill="rgba(51,65,85,0.25)" />
-    </svg>
-  );
-}
-
-/* ============ FOG — volumetric layered depth ============ */
+/* ============ FOG ============ */
 function FogScene() {
   const fogLayers = useMemo(() => Array.from({ length: 7 }, (_, i) => ({
-    id: i,
-    top: 5 + i * 13,
-    duration: 18 + i * 4,
-    delay: i * 1.5,
-    opacity: 0.15 + i * 0.04,
-    blur: 15 + i * 4,
-    direction: i % 2 === 0 ? 1 : -1,
+    id: i, top: 5 + i * 13, duration: 18 + i * 4, delay: i * 1.5,
+    opacity: 0.15 + i * 0.04, blur: 15 + i * 4, direction: i % 2 === 0 ? 1 : -1,
   })), []);
 
   return (
     <>
-      {/* Base misty gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-300 via-slate-200 to-slate-300 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(241,245,249,0.2),transparent_70%)]" />
 
-      {/* Multiple fog layers drifting in both directions for depth */}
       {fogLayers.map((f) => (
         <motion.div key={f.id} className="absolute h-32 w-[180%] rounded-full"
           style={{ top: `${f.top}%`, left: "-40%",
@@ -655,7 +536,6 @@ function FogScene() {
           transition={{ duration: f.duration, delay: f.delay, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }} />
       ))}
 
-      {/* Ground fog — thicker at the bottom */}
       <motion.div className="absolute inset-x-0 bottom-0 h-40 rounded-t-[50%]"
         style={{ background: "linear-gradient(to top, rgba(226,232,240,0.4), transparent)", filter: "blur(20px)" }}
         animate={{ opacity: [0.6, 0.8, 0.6], scaleX: [1, 1.05, 1] }}
@@ -664,14 +544,12 @@ function FogScene() {
   );
 }
 
-/* ============ RAIN / STORM — proper angled streaks + splashes ============ */
+/* ============ RAIN / STORM ============ */
 function RainScene({ isStorm }: { isStorm: boolean }) {
   const drops = useMemo(() => Array.from({ length: isStorm ? 100 : 70 }, (_, i) => {
     const layer = i % 3;
     return {
-      id: i,
-      left: Math.random() * 110 - 5,
-      delay: Math.random() * 2,
+      id: i, left: Math.random() * 110 - 5, delay: Math.random() * 2,
       duration: layer === 0 ? 0.9 + Math.random() * 0.3 : layer === 1 ? 0.55 + Math.random() * 0.25 : 0.35 + Math.random() * 0.2,
       length: layer === 0 ? 14 + Math.random() * 10 : layer === 1 ? 22 + Math.random() * 14 : 30 + Math.random() * 22,
       opacity: layer === 0 ? 0.15 + Math.random() * 0.15 : layer === 1 ? 0.3 + Math.random() * 0.2 : 0.5 + Math.random() * 0.25,
@@ -685,33 +563,21 @@ function RainScene({ isStorm }: { isStorm: boolean }) {
 
   return (
     <>
-      {/* Stormy sky */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-600 via-slate-500 to-slate-400 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700" />
       {isStorm && <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-slate-800/60 to-transparent" />}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(147,197,253,0.08),transparent_60%)]" />
 
-      {/* Angled rain streaks — 12° slant for wind effect */}
       <div className="absolute inset-0" style={{ transform: "skewX(-10deg)" }}>
         {drops.map((d) => (
           <motion.span key={d.id} className="absolute top-0"
-            style={{
-              left: `${d.left}%`,
-              width: d.layer === 2 ? "2px" : "1px",
-              height: `${d.length}px`,
-              background: d.layer === 2
-                ? "linear-gradient(to bottom, transparent, rgba(125,211,252,1) 30%, rgba(96,165,250,1))"
-                : "linear-gradient(to bottom, transparent, rgba(147,197,253,0.85))",
-              opacity: d.opacity + 0.1,
-              boxShadow: d.layer === 2 ? "0 0 5px rgba(125,211,252,0.6)" : "none",
-              borderRadius: "1px",
-            }}
-            initial={{ y: -80 }}
-            animate={{ y: "140%" }}
+            style={{ left: `${d.left}%`, width: d.layer === 2 ? "2px" : "1px", height: `${d.length}px`,
+              background: d.layer === 2 ? "linear-gradient(to bottom, transparent, rgba(125,211,252,1) 30%, rgba(96,165,250,1))" : "linear-gradient(to bottom, transparent, rgba(147,197,253,0.85))",
+              opacity: d.opacity + 0.1, boxShadow: d.layer === 2 ? "0 0 5px rgba(125,211,252,0.6)" : "none", borderRadius: "1px" }}
+            initial={{ y: -80 }} animate={{ y: "140%" }}
             transition={{ duration: d.duration, delay: d.delay, repeat: Infinity, ease: "linear" }} />
         ))}
       </div>
 
-      {/* Splash ripples at the bottom — bigger and more visible */}
       {splashes.map((s) => (
         <motion.span key={`sp-${s.id}`} className="absolute bottom-3 rounded-full border-2 border-sky-200/70"
           style={{ left: `${s.left}%`, width: `${s.size}px`, height: `${s.size}px`, boxShadow: "0 0 4px rgba(125,211,252,0.3)" }}
@@ -719,7 +585,6 @@ function RainScene({ isStorm }: { isStorm: boolean }) {
           transition={{ duration: 1, delay: s.delay, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }} />
       ))}
 
-      {/* Lightning for thunderstorm — full-screen flash + bolt */}
       {isStorm && (
         <>
           <motion.div className="absolute inset-0 bg-white"

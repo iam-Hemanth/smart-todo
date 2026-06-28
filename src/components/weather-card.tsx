@@ -89,21 +89,23 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
       <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl" />
       <div className="pointer-events-none absolute -left-12 bottom-0 h-40 w-40 rounded-full bg-amber-400/20 blur-3xl" />
 
-      {/* Readability scrim — subtle dark gradient at bottom + light overlay for text contrast */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 dark:from-black/20 dark:to-black/30" />
+      {/* Readability scrim — stronger dual-direction gradient for text contrast in BOTH modes */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-black/5 to-black/15 dark:from-black/30 dark:via-black/20 dark:to-black/40" />
+      {/* Light scrim for dark-mode text readability */}
+      <div className="pointer-events-none absolute inset-0 bg-white/5 dark:bg-white/[0.02]" />
 
       <div className="relative p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 backdrop-blur-sm">
               <MapPin className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground" style={{ textShadow: "0 1px 2px rgba(255,255,255,0.5)" }}>Live weather</p>
-              <h2 className="text-lg font-semibold tracking-tight drop-shadow-sm">
+              <p className="text-sm font-medium text-foreground/70" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(255,255,255,0.4)" }}>Live weather</p>
+              <h2 className="text-lg font-semibold tracking-tight" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(255,255,255,0.4)" }}>
                 {location.name}
                 {location.admin1 && location.admin1 !== location.name && (
-                  <span className="text-muted-foreground font-normal">
+                  <span className="text-foreground/60 font-normal">
                     {" "}, {location.admin1}
                   </span>
                 )}
@@ -201,18 +203,18 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
                 <div>
                   {data ? (
                     <div className="flex items-start gap-1">
-                      <span className="text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums drop-shadow-md">
+                      <span className="text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.25), 0 0 12px rgba(255,255,255,0.5)" }}>
                         {Math.round(data.temperature)}
                       </span>
-                      <span className="mt-1 text-2xl font-medium text-muted-foreground">°C</span>
+                      <span className="mt-1 text-2xl font-medium text-muted-foreground" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>°C</span>
                     </div>
                   ) : (
                     <div className="h-14 w-32 rounded-xl bg-muted/40 animate-pulse" />
                   )}
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 text-sm text-foreground/70" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.2), 0 0 6px rgba(255,255,255,0.3)" }}>
                     {info?.label ?? "Loading conditions…"}
                   </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground/80">
+                  <p className="mt-0.5 text-xs text-foreground/60" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>
                     Feels like {data ? `${Math.round(data.apparentTemperature)}°C` : "—"}
                   </p>
                 </div>
