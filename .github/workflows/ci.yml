@@ -28,5 +28,3 @@ jobs:
 
       - name: Build
         run: bun run build
-        env:
-          DATABASE_URL: "file:./dev.db"

@@ -53,6 +53,7 @@ export function useWeather(lat: number, lon: number): WeatherState {
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
+     
     setLoading(true);
     setError(null);
     try {

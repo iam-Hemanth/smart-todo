@@ -146,7 +146,10 @@ export function AddTodo() {
     );
 
     addTodo({
-      text: draft.text.trim(),
+      // Use the NLP-cleaned text if available (strips parsed keywords like
+      // "tomorrow", "high", "outdoor", "#tag", "30min", and leading prepositions
+      // like "on friday" → "on"). Falls back to raw input if no parse.
+      text: (parsed?.text && parsed.text.trim()) || draft.text.trim(),
       category: finalCategory,
       priority: finalPriority,
       dueDate: finalDueDate,

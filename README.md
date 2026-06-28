@@ -78,9 +78,6 @@ cd smart-todo
 npm install
 # or: yarn / pnpm install / bun install
 
-# Set up the environment
-cp .env.example .env
-
 # Run the development server
 npm run dev
 ```
@@ -96,13 +93,13 @@ npm run start
 
 ## 🔑 Environment Variables
 
-This project uses **only free, keyless APIs** — no API keys required!
+This project uses **only free, keyless APIs** — no API keys or environment variables required!
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | SQLite database path (for Prisma, optional) | `file:./dev.db` |
+- **Weather**: [Open-Meteo](https://open-meteo.com) (free, no key)
+- **Geocoding**: [OpenStreetMap Nominatim](https://nominatim.org) (free, no key)
+- **Persistence**: Browser `localStorage` (no database)
 
-See [`.env.example`](.env.example) for details.
+Just clone, install, and run.
 
 ## 📁 Project Structure
 
@@ -150,8 +147,6 @@ smart-todo/
 ├── public/
 │   ├── hero-screenshot.png
 │   └── logo.svg
-├── prisma/schema.prisma
-├── .env.example
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -175,7 +170,8 @@ The natural-language parser recognizes:
 | `Walk in lalbagh tomorrow outdoor high #fitness 30min` | Outdoor · High priority · Due tomorrow · 30min estimate · #fitness tag |
 | `Submit report today urgent #work 1.5hr` | Indoor · High priority · Due today · 90min estimate · #work tag |
 | `Brunch next week low` | Indoor · Low priority · Due in 7 days |
-| `Call mom friday` | Indoor · Due next Friday |
+| `Call mom on friday` | Indoor · Due next Friday (preposition "on" auto-stripped) |
+| `Submit report by tomorrow` | Indoor · Due tomorrow (preposition "by" auto-stripped) |
 
 Detected fields appear as live "Smart parse" hint chips under the input.
 

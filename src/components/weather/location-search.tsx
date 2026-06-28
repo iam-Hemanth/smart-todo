@@ -39,11 +39,16 @@ export function LocationSearch() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (query.trim().length < 2) {
+      // Clear synchronously — safe because this is a short-circuit, not a
+      // cascading state update (the effect only re-runs when query/open change).
+       
       setResults([]);
+       
       setLoading(false);
       return;
     }
 
+     
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {

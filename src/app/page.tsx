@@ -15,9 +15,11 @@ import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { TodaySummaryPill } from "@/components/today-summary-pill";
 import { useStreakWatcher } from "@/hooks/use-streak-watcher";
 import { useConfettiOnAllDone } from "@/hooks/use-confetti-on-all-done";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 export default function Home() {
   const [isRaining, setIsRaining] = useState(false);
+  const hydrated = useHydrated();
 
   const handleRainChange = useCallback((raining: boolean) => {
     setIsRaining(raining);
@@ -170,30 +172,42 @@ export default function Home() {
           <AddTodo />
         </motion.div>
 
-        {/* Today summary pill */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 }}
-          className="mt-4"
-        >
-          <TodaySummaryPill isRaining={isRaining} />
-        </motion.div>
+        {/* Today summary pill — gated on hydration to avoid SSR mismatch */}
+        {hydrated && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.18 }}
+            className="mt-4"
+          >
+            <TodaySummaryPill isRaining={isRaining} />
+          </motion.div>
+        )}
 
-        {/* Stats + filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mt-4 space-y-4"
-        >
-          <StatsBar />
-          <FilterTabs />
-        </motion.div>
+        {/* Stats + filters — gated on hydration */}
+        {hydrated && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-4 space-y-4"
+          >
+            <StatsBar />
+            <FilterTabs />
+          </motion.div>
+        )}
 
-        {/* List */}
+        {/* List — gated on hydration */}
         <main className="mt-4 flex-1 pb-12">
-          <TodoList isRaining={isRaining} />
+          {hydrated ? (
+            <TodoList isRaining={isRaining} />
+          ) : (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-20 rounded-2xl bg-muted/30 animate-pulse" />
+              ))}
+            </div>
+          )}
         </main>
 
         {/* Footer */}

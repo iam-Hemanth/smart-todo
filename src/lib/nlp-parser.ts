@@ -166,23 +166,26 @@ export function parseNaturalLanguage(input: string): ParsedTodo {
   // Explicit "outdoor" / "indoor" tokens get stripped from title
   text = text.replace(/\b(outdoor|outside|indoor|inside)\b/gi, " ");
 
-  // Due date keywords
+  // Due date keywords — also strip leading prepositions (on, by, for, at, due)
+  // to avoid awkward trailing prepositions like "Call mom on" after date extraction.
+  const PREP = /(?:\b(?:on|by|for|at|due(?:\s+on)?|till|until)\s+)?/i;
+
   if (/\btoday\b/i.test(text)) {
     result.dueDate = isoOffset(0);
-    text = text.replace(/\btoday\b/gi, " ");
+    text = text.replace(new RegExp(PREP.source + /\btoday\b/i.source, "gi"), " ");
   } else if (/\btomorrow\b/i.test(text) || /\btmrw\b/i.test(text)) {
     result.dueDate = isoOffset(1);
-    text = text.replace(/\btomorrow\b|\btmrw\b/gi, " ");
+    text = text.replace(new RegExp(PREP.source + /\b(?:tomorrow|tmrw)\b/i.source, "gi"), " ");
   } else if (/\bnext week\b/i.test(text)) {
     result.dueDate = isoOffset(7);
-    text = text.replace(/\bnext week\b/gi, " ");
+    text = text.replace(new RegExp(PREP.source + /\bnext week\b/i.source, "gi"), " ");
   } else {
     // Weekday names
     for (const [name, idx] of Object.entries(WEEKDAY_MAP)) {
-      const re = new RegExp(`\\b${name}\\b`, "i");
+      const re = new RegExp(PREP.source + `\\b${name}\\b`, "i");
       if (re.test(text)) {
         result.dueDate = nextWeekday(idx);
-        text = text.replace(re, " ");
+        text = text.replace(new RegExp(re.source, "gi"), " ");
         break;
       }
     }
