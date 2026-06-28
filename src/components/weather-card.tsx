@@ -89,6 +89,9 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
       <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl" />
       <div className="pointer-events-none absolute -left-12 bottom-0 h-40 w-40 rounded-full bg-amber-400/20 blur-3xl" />
 
+      {/* Readability scrim — subtle dark gradient at bottom + light overlay for text contrast */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 dark:from-black/20 dark:to-black/30" />
+
       <div className="relative p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
@@ -96,8 +99,8 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
               <MapPin className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Live weather</p>
-              <h2 className="text-lg font-semibold tracking-tight">
+              <p className="text-sm font-medium text-muted-foreground" style={{ textShadow: "0 1px 2px rgba(255,255,255,0.5)" }}>Live weather</p>
+              <h2 className="text-lg font-semibold tracking-tight drop-shadow-sm">
                 {location.name}
                 {location.admin1 && location.admin1 !== location.name && (
                   <span className="text-muted-foreground font-normal">
@@ -198,7 +201,7 @@ export function WeatherCard({ onRainChange }: WeatherCardProps) {
                 <div>
                   {data ? (
                     <div className="flex items-start gap-1">
-                      <span className="text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums">
+                      <span className="text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums drop-shadow-md">
                         {Math.round(data.temperature)}
                       </span>
                       <span className="mt-1 text-2xl font-medium text-muted-foreground">°C</span>
