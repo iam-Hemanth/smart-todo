@@ -15,13 +15,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Smart To-Do · Weather-aware tasks for Bangalore",
+  title: "Smart To-Do · Weather-aware tasks",
   description:
-    "A clean, modern smart to-do list that shows live Bangalore weather and warns you when it's raining before you head outdoors.",
-  keywords: ["to-do", "todo", "Bangalore", "weather", "tasks", "Next.js", "Tailwind"],
+    "A weather-aware smart to-do list with cinematic animated weather scenes, AQI monitoring, streak tracking, and natural-language task parsing.",
+  keywords: ["to-do", "todo", "weather", "tasks", "AQI", "Next.js", "Tailwind", "framer-motion"],
   authors: [{ name: "Smart To-Do" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/logo.svg",
+  },
+  openGraph: {
+    title: "Smart To-Do · Weather-aware tasks",
+    description: "Cinematic weather animations + smart task management",
+    type: "website",
   },
 };
 
