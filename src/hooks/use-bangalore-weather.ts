@@ -174,6 +174,7 @@ export function useWeather(lat: number, lon: number): WeatherState {
   useEffect(() => {
     // fetchData's first call: loading is already `true` from useState init,
     // so no synchronous setState happens in this effect body.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
     const id = setInterval(() => {
       // setInterval callback runs asynchronously — not in the effect body.
