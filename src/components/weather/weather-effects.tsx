@@ -155,8 +155,9 @@ function useClouds(count: number): CloudShape[] {
           id: i,
           top: 5 + Math.random() * 45,
           scale: layer === 0 ? 0.7 + Math.random() * 0.4 : 1.1 + Math.random() * 0.7,
-          duration: layer === 0 ? 55 + Math.random() * 25 : 30 + Math.random() * 20,
-          delay: i * 5,
+          // Speeded up ~30% from previous values
+          duration: layer === 0 ? 38 + Math.random() * 18 : 22 + Math.random() * 14,
+          delay: i * 4,
           opacity: layer === 0 ? 0.25 + Math.random() * 0.15 : 0.5 + Math.random() * 0.25,
           layer,
         };
@@ -362,7 +363,7 @@ function CloudyNightScene({ filterId }: { filterId: string }) {
 /* ============ CLEAR SUNNY DAY ============ */
 function ClearSunnyDayScene({ filterId }: { filterId: string }) {
   const dustMotes = useMemo(
-    () => Array.from({ length: 14 }, (_, i) => ({
+    () => Array.from({ length: 10 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
       top: 30 + Math.random() * 60,
@@ -374,58 +375,44 @@ function ClearSunnyDayScene({ filterId }: { filterId: string }) {
 
   return (
     <>
-      {/* Warm atmospheric sky glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_82%_12%,rgba(251,191,36,0.22),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_100%,rgba(254,215,170,0.15),transparent_60%)]" />
+      {/* Real blue sky — dominant gradient from deep sky-blue to soft cyan */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-400 via-sky-300 to-sky-200 dark:from-sky-700 dark:via-sky-600 dark:to-sky-500" />
+      {/* Sun-side warm wash — subtle, only near the sun */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_85%_10%,rgba(254,243,199,0.25),transparent_45%)]" />
+      {/* Horizon haze — lighter blue at the bottom */}
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-sky-100/40 to-transparent dark:from-sky-300/20" />
 
-      {/* Sun — HDR radial gradient core + atmospheric bloom */}
+      {/* Sun — bright HDR core with soft atmospheric bloom (no god-rays) */}
       <motion.div
-        className="absolute -right-4 -top-4"
+        className="absolute right-6 top-6"
         animate={{ scale: [1, 1.04, 1] }}
         transition={{ duration: 5, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
       >
-        {/* Outer atmospheric haze — very wide soft glow */}
-        <svg className="absolute -inset-24" viewBox="0 0 300 300" style={{ filter: "blur(16px)" }}>
-          <circle cx="150" cy="150" r="120" fill={"url(#" + filterId + "-sun-core)"} opacity="0.5" />
+        {/* Outer atmospheric haze */}
+        <svg className="absolute -inset-20" viewBox="0 0 250 250" style={{ filter: "blur(14px)" }}>
+          <circle cx="125" cy="125" r="100" fill={"url(#" + filterId + "-sun-core)"} opacity="0.45" />
         </svg>
         {/* Mid bloom */}
-        <svg className="absolute -inset-10" viewBox="0 0 200 200" style={{ filter: "blur(6px)" }}>
-          <circle cx="100" cy="100" r="80" fill={"url(#" + filterId + "-sun-core)"} opacity="0.8" />
+        <svg className="absolute -inset-8" viewBox="0 0 180 180" style={{ filter: "blur(5px)" }}>
+          <circle cx="90" cy="90" r="70" fill={"url(#" + filterId + "-sun-core)"} opacity="0.75" />
         </svg>
-        {/* Sun core — sharp HDR radial gradient */}
+        {/* Sun core — bright white-amber radial */}
         <div
-          className="relative h-24 w-24 rounded-full"
+          className="relative h-16 w-16 rounded-full"
           style={{
-            background: `radial-gradient(circle at 40% 40%, #fffbeb 0%, #fef3c7 25%, #fbbf24 55%, #f59e0b 80%, rgba(245,158,11,0) 100%)`,
-            boxShadow: "0 0 60px rgba(251,191,36,0.7), 0 0 100px rgba(245,158,11,0.4)",
+            background: `radial-gradient(circle at 40% 40%, #ffffff 0%, #fffbeb 20%, #fef3c7 45%, #fbbf24 70%, rgba(245,158,11,0) 100%)`,
+            boxShadow: "0 0 50px rgba(254,243,199,0.8), 0 0 90px rgba(251,191,36,0.4)",
           }}
         />
       </motion.div>
 
-      {/* Slowly rotating god rays — very subtle */}
-      <motion.div
-        className="absolute -right-8 -top-8 h-48 w-48"
-        initial={{ rotate: 0 }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
-        style={{ opacity: 0.25 }}
-      >
-        {Array.from({ length: 8 }, (_, i) => (
-          <div
-            key={i}
-            className="absolute left-1/2 top-1/2 h-24 w-1 -translate-x-1/2 -translate-y-full origin-bottom bg-gradient-to-t from-amber-300/0 via-amber-200/30 to-amber-100/0"
-            style={{ rotate: `${i * 45}deg` }}
-          />
-        ))}
-      </motion.div>
-
-      {/* Floating dust motes — atmospheric depth */}
+      {/* Subtle floating dust motes — barely visible atmospheric depth */}
       {dustMotes.map((m) => (
         <motion.span
           key={m.id}
-          className="absolute h-1 w-1 rounded-full bg-amber-200/50"
-          style={{ left: `${m.left}%`, top: `${m.top}%`, boxShadow: "0 0 3px rgba(251,191,36,0.3)" }}
-          animate={{ y: [0, -25, 0], opacity: [0, 0.7, 0] }}
+          className="absolute h-1 w-1 rounded-full bg-white/40"
+          style={{ left: `${m.left}%`, top: `${m.top}%` }}
+          animate={{ y: [0, -20, 0], opacity: [0, 0.5, 0] }}
           transition={{
             duration: m.duration,
             delay: m.delay,
@@ -440,9 +427,9 @@ function ClearSunnyDayScene({ filterId }: { filterId: string }) {
 
 /* ============ HOT SUNNY DAY ============ */
 function HotSunnyDayScene({ filterId }: { filterId: string }) {
-  const heatWaves = useMemo(() => Array.from({ length: 10 }, (_, i) => i), []);
+  const heatWaves = useMemo(() => Array.from({ length: 8 }, (_, i) => i), []);
   const sparkles = useMemo(
-    () => Array.from({ length: 18 }, (_, i) => ({
+    () => Array.from({ length: 14 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
       bottom: Math.random() * 40,
@@ -454,49 +441,35 @@ function HotSunnyDayScene({ filterId }: { filterId: string }) {
 
   return (
     <>
-      {/* Intense heat atmospheric glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_82%_12%,rgba(249,115,22,0.28),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_100%,rgba(234,88,12,0.18),transparent_55%)]" />
+      {/* Hazy warm-blue sky — hot days have a washed-out blue with orange tint */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-300 via-sky-200 to-orange-100 dark:from-sky-800 dark:via-sky-700 dark:to-orange-900/40" />
+      {/* Sun-side intense warm wash */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_85%_10%,rgba(251,146,60,0.3),transparent_50%)]" />
+      {/* Ground heat haze */}
+      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-orange-200/30 to-transparent dark:from-orange-800/20" />
 
-      {/* Blazing sun — intense HDR core */}
+      {/* Blazing sun — intense HDR core (no god-rays) */}
       <motion.div
-        className="absolute -right-6 -top-6"
+        className="absolute right-5 top-5"
         animate={{ scale: [1, 1.06, 1] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
       >
         {/* Massive outer haze */}
-        <svg className="absolute -inset-32" viewBox="0 0 400 400" style={{ filter: "blur(20px)" }}>
-          <circle cx="200" cy="200" r="160" fill={"url(#" + filterId + "-sun-hot)"} opacity="0.55" />
+        <svg className="absolute -inset-28" viewBox="0 0 350 350" style={{ filter: "blur(18px)" }}>
+          <circle cx="175" cy="175" r="140" fill={"url(#" + filterId + "-sun-hot)"} opacity="0.5" />
         </svg>
         {/* Mid bloom */}
-        <svg className="absolute -inset-14" viewBox="0 0 300 300" style={{ filter: "blur(8px)" }}>
-          <circle cx="150" cy="150" r="110" fill={"url(#" + filterId + "-sun-hot)"} opacity="0.85" />
+        <svg className="absolute -inset-12" viewBox="0 0 260 260" style={{ filter: "blur(7px)" }}>
+          <circle cx="130" cy="130" r="95" fill={"url(#" + filterId + "-sun-hot)"} opacity="0.8" />
         </svg>
         {/* Sun core — blazing white-orange */}
         <div
-          className="relative h-28 w-28 rounded-full"
+          className="relative h-20 w-20 rounded-full"
           style={{
             background: `radial-gradient(circle at 40% 40%, #ffffff 0%, #fef3c7 15%, #fbbf24 35%, #f97316 60%, #ea580c 85%, rgba(220,38,38,0) 100%)`,
-            boxShadow: "0 0 80px rgba(249,115,22,0.8), 0 0 140px rgba(234,88,12,0.5)",
+            boxShadow: "0 0 70px rgba(249,115,22,0.8), 0 0 120px rgba(234,88,12,0.45)",
           }}
         />
-      </motion.div>
-
-      {/* God rays — more intense, faster rotation */}
-      <motion.div
-        className="absolute -right-10 -top-10 h-56 w-56"
-        initial={{ rotate: 0 }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 80, repeat: Infinity, ease: "linear" }}
-        style={{ opacity: 0.35 }}
-      >
-        {Array.from({ length: 12 }, (_, i) => (
-          <div
-            key={i}
-            className="absolute left-1/2 top-1/2 h-28 w-1 -translate-x-1/2 -translate-y-full origin-bottom bg-gradient-to-t from-orange-400/0 via-orange-300/40 to-amber-200/0"
-            style={{ rotate: `${i * 30}deg` }}
-          />
-        ))}
       </motion.div>
 
       {/* Heat shimmer — rising distortion waves */}
@@ -504,22 +477,22 @@ function HotSunnyDayScene({ filterId }: { filterId: string }) {
         <motion.div
           key={i}
           className="absolute bottom-0"
-          style={{ left: `${i * 11 - 2}%`, width: "16%" }}
+          style={{ left: `${i * 13 - 3}%`, width: "18%" }}
           initial={{ opacity: 0 }}
           animate={{
-            opacity: [0, 0.4, 0],
-            y: [0, -45, -90],
-            scaleX: [1, 1.18, 1],
+            opacity: [0, 0.35, 0],
+            y: [0, -40, -80],
+            scaleX: [1, 1.15, 1],
             skewX: [0, 4, -4, 0],
           }}
           transition={{
             duration: 4,
-            delay: i * 0.45,
+            delay: i * 0.5,
             repeat: Infinity,
             ease: [0.4, 0, 0.6, 1],
           }}
         >
-          <div className="h-32 w-full bg-gradient-to-t from-orange-300/45 via-amber-200/25 to-transparent blur-md" />
+          <div className="h-28 w-full bg-gradient-to-t from-orange-300/40 via-amber-200/20 to-transparent blur-md" />
         </motion.div>
       ))}
 
@@ -527,9 +500,9 @@ function HotSunnyDayScene({ filterId }: { filterId: string }) {
       {sparkles.map((s) => (
         <motion.span
           key={s.id}
-          className="absolute h-1 w-1 rounded-full bg-orange-300/70"
-          style={{ left: `${s.left}%`, bottom: `${s.bottom}%`, boxShadow: "0 0 4px rgba(249,115,22,0.6)" }}
-          animate={{ y: [0, -35, -70], opacity: [0, 0.9, 0] }}
+          className="absolute h-1 w-1 rounded-full bg-orange-300/60"
+          style={{ left: `${s.left}%`, bottom: `${s.bottom}%`, boxShadow: "0 0 4px rgba(249,115,22,0.5)" }}
+          animate={{ y: [0, -30, -60], opacity: [0, 0.8, 0] }}
           transition={{
             duration: s.duration,
             delay: s.delay,
@@ -544,52 +517,37 @@ function HotSunnyDayScene({ filterId }: { filterId: string }) {
 
 /* ============ PARTLY CLOUDY DAY ============ */
 function PartlyCloudyDayScene({ filterId }: { filterId: string }) {
-  const clouds = useClouds(6);
+  const clouds = useClouds(7);
 
   return (
     <>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_10%,rgba(251,191,36,0.18),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_100%,rgba(186,230,253,0.12),transparent_60%)]" />
+      {/* Real blue sky — slightly softer than clear sky */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-400 via-sky-300 to-sky-200 dark:from-sky-700 dark:via-sky-600 dark:to-sky-500" />
+      {/* Sun-side warm wash */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_85%_10%,rgba(254,243,199,0.2),transparent_45%)]" />
 
-      {/* Sun peeking top-right with HDR glow */}
+      {/* Sun peeking top-right with soft glow (no god-rays) */}
       <motion.div
-        className="absolute -right-6 -top-6"
+        className="absolute right-6 top-5"
         animate={{ scale: [1, 1.05, 1] }}
         transition={{ duration: 5, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
       >
-        <svg className="absolute -inset-20" viewBox="0 0 250 250" style={{ filter: "blur(14px)" }}>
-          <circle cx="125" cy="125" r="100" fill={"url(#" + filterId + "-sun-core)"} opacity="0.5" />
+        <svg className="absolute -inset-16" viewBox="0 0 220 220" style={{ filter: "blur(12px)" }}>
+          <circle cx="110" cy="110" r="85" fill={"url(#" + filterId + "-sun-core)"} opacity="0.45" />
         </svg>
-        <svg className="absolute -inset-8" viewBox="0 0 180 180" style={{ filter: "blur(5px)" }}>
-          <circle cx="90" cy="90" r="70" fill={"url(#" + filterId + "-sun-core)"} opacity="0.85" />
+        <svg className="absolute -inset-6" viewBox="0 0 160 160" style={{ filter: "blur(4px)" }}>
+          <circle cx="80" cy="80" r="60" fill={"url(#" + filterId + "-sun-core)"} opacity="0.75" />
         </svg>
         <div
-          className="relative h-20 w-20 rounded-full"
+          className="relative h-14 w-14 rounded-full"
           style={{
-            background: `radial-gradient(circle at 40% 40%, #fffbeb 0%, #fef3c7 25%, #fbbf24 55%, #f59e0b 80%, rgba(245,158,11,0) 100%)`,
-            boxShadow: "0 0 50px rgba(251,191,36,0.65), 0 0 90px rgba(245,158,11,0.35)",
+            background: `radial-gradient(circle at 40% 40%, #ffffff 0%, #fffbeb 20%, #fef3c7 45%, #fbbf24 70%, rgba(245,158,11,0) 100%)`,
+            boxShadow: "0 0 45px rgba(254,243,199,0.7), 0 0 80px rgba(251,191,36,0.3)",
           }}
         />
       </motion.div>
 
-      {/* Subtle god rays */}
-      <motion.div
-        className="absolute -right-6 -top-6 h-40 w-40"
-        initial={{ rotate: 0 }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 100, repeat: Infinity, ease: "linear" }}
-        style={{ opacity: 0.2 }}
-      >
-        {Array.from({ length: 8 }, (_, i) => (
-          <div
-            key={i}
-            className="absolute left-1/2 top-1/2 h-20 w-0.5 -translate-x-1/2 -translate-y-full origin-bottom bg-gradient-to-t from-amber-300/0 via-amber-200/35 to-amber-100/0"
-            style={{ rotate: `${i * 45}deg` }}
-          />
-        ))}
-      </motion.div>
-
-      {/* Volumetric fluffy clouds — SVG turbulence filter for soft organic edges */}
+      {/* 3D volumetric clouds — SVG turbulence + strong top-highlight + deep bottom-shadow */}
       {clouds.map((c) => (
         <motion.div
           key={c.id}
@@ -608,20 +566,31 @@ function PartlyCloudyDayScene({ filterId }: { filterId: string }) {
             ease: [0.4, 0, 0.6, 1],
           }}
         >
-          <svg width="200" height="90" viewBox="0 0 200 90" filter={c.layer === 0 ? `url(#${filterId}-cloud-soft)` : `url(#${filterId}-cloud-soft-2)`}>
-            {/* Cloud body — layered ellipses with soft gradient for 3D volume */}
+          <svg width="220" height="100" viewBox="0 0 220 100" filter={c.layer === 0 ? `url(#${filterId}-cloud-soft)` : `url(#${filterId}-cloud-soft-2)`}>
             <defs>
-              <radialGradient id={`${filterId}-cloud-grad-${c.id}`} cx="50%" cy="35%" r="65%">
+              {/* 3D cloud gradient — bright white top, darker slate bottom */}
+              <linearGradient id={`pc-grad-${c.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-                <stop offset="70%" stopColor="#f1f5f9" stopOpacity="0.95" />
-                <stop offset="100%" stopColor="#cbd5e1" stopOpacity="0.8" />
+                <stop offset="30%" stopColor="#f8fafc" stopOpacity="0.98" />
+                <stop offset="65%" stopColor="#e2e8f0" stopOpacity="0.95" />
+                <stop offset="90%" stopColor="#94a3b8" stopOpacity="0.85" />
+                <stop offset="100%" stopColor="#64748b" stopOpacity="0.75" />
+              </linearGradient>
+              {/* Sunlit highlight — warm tint on the top-left edge */}
+              <radialGradient id={`pc-hl-${c.id}`} cx="35%" cy="20%" r="40%">
+                <stop offset="0%" stopColor="rgba(254,243,199,0.5)" />
+                <stop offset="100%" stopColor="rgba(254,243,199,0)" />
               </radialGradient>
             </defs>
-            <ellipse cx="50" cy="55" rx="42" ry="28" fill={`url(#${filterId}-cloud-grad-${c.id})`} />
-            <ellipse cx="95" cy="42" rx="50" ry="35" fill={`url(#${filterId}-cloud-grad-${c.id})`} />
-            <ellipse cx="145" cy="50" rx="44" ry="30" fill={`url(#${filterId}-cloud-grad-${c.id})`} />
-            {/* Soft shadow underneath */}
-            <ellipse cx="100" cy="72" rx="80" ry="10" fill="rgba(148,163,184,0.15)" />
+            {/* Cloud body — multi-ellipse for organic puff shape */}
+            <ellipse cx="50" cy="60" rx="45" ry="30" fill={`url(#pc-grad-${c.id})`} />
+            <ellipse cx="100" cy="45" rx="55" ry="38" fill={`url(#pc-grad-${c.id})`} />
+            <ellipse cx="155" cy="52" rx="48" ry="32" fill={`url(#pc-grad-${c.id})`} />
+            <ellipse cx="190" cy="62" rx="30" ry="22" fill={`url(#pc-grad-${c.id})`} />
+            {/* Sunlit highlight overlay */}
+            <ellipse cx="100" cy="35" rx="50" ry="15" fill={`url(#pc-hl-${c.id})`} />
+            {/* Bottom shadow — grounding the cloud in 3D space */}
+            <ellipse cx="120" cy="80" rx="100" ry="8" fill="rgba(71,85,105,0.2)" />
           </svg>
         </motion.div>
       ))}
@@ -635,11 +604,11 @@ function OvercastDayScene({ filterId }: { filterId: string }) {
 
   return (
     <>
-      {/* Heavy overcast sky wash */}
-      <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-slate-400/35 via-slate-300/20 to-transparent" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(203,213,225,0.3),transparent_60%)]" />
+      {/* Heavy overcast sky — flat gray gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-400 via-slate-300 to-slate-200 dark:from-slate-600 dark:via-slate-500 dark:to-slate-400" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(241,245,249,0.25),transparent_60%)]" />
 
-      {/* Dense volumetric clouds — multiple SVG-filtered layers for realistic overcast */}
+      {/* Dense 3D volumetric clouds — strong top-light + deep bottom-shadow */}
       {clouds.map((c) => (
         <motion.div
           key={c.id}
@@ -652,32 +621,43 @@ function OvercastDayScene({ filterId }: { filterId: string }) {
           initial={{ x: "-30%" }}
           animate={{ x: "130%" }}
           transition={{
-            duration: c.duration * 1.2,
+            duration: c.duration * 1.1,
             delay: c.delay,
             repeat: Infinity,
             ease: [0.4, 0, 0.6, 1],
           }}
         >
-          <svg width="280" height="110" viewBox="0 0 280 110" filter={c.layer === 0 ? `url(#${filterId}-cloud-soft)` : `url(#${filterId}-cloud-soft-2)`}>
+          <svg width="300" height="120" viewBox="0 0 300 120" filter={c.layer === 0 ? `url(#${filterId}-cloud-soft)` : `url(#${filterId}-cloud-soft-2)`}>
             <defs>
-              <radialGradient id={`${filterId}-overcast-grad-${c.id}`} cx="50%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="#f1f5f9" stopOpacity="0.95" />
-                <stop offset="60%" stopColor="#cbd5e1" stopOpacity="0.85" />
-                <stop offset="100%" stopColor="#94a3b8" stopOpacity="0.7" />
+              {/* 3D cloud gradient — bright top, dark bottom for volume */}
+              <linearGradient id={`oc-grad-${c.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#f8fafc" stopOpacity="0.98" />
+                <stop offset="35%" stopColor="#e2e8f0" stopOpacity="0.95" />
+                <stop offset="70%" stopColor="#94a3b8" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#475569" stopOpacity="0.8" />
+              </linearGradient>
+              {/* Soft top highlight from ambient skylight */}
+              <radialGradient id={`oc-hl-${c.id}`} cx="50%" cy="15%" r="50%">
+                <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0)" />
               </radialGradient>
             </defs>
-            <ellipse cx="55" cy="65" rx="50" ry="35" fill={`url(#${filterId}-overcast-grad-${c.id})`} />
-            <ellipse cx="110" cy="48" rx="58" ry="40" fill={`url(#${filterId}-overcast-grad-${c.id})`} />
-            <ellipse cx="170" cy="55" rx="55" ry="38" fill={`url(#${filterId}-overcast-grad-${c.id})`} />
-            <ellipse cx="225" cy="62" rx="48" ry="32" fill={`url(#${filterId}-overcast-grad-${c.id})`} />
-            {/* Shadow base */}
-            <ellipse cx="140" cy="88" rx="120" ry="12" fill="rgba(100,116,139,0.2)" />
+            {/* Cloud body — 5 overlapping ellipses for organic shape */}
+            <ellipse cx="55" cy="70" rx="52" ry="35" fill={`url(#oc-grad-${c.id})`} />
+            <ellipse cx="110" cy="52" rx="60" ry="42" fill={`url(#oc-grad-${c.id})`} />
+            <ellipse cx="170" cy="58" rx="56" ry="38" fill={`url(#oc-grad-${c.id})`} />
+            <ellipse cx="225" cy="65" rx="50" ry="34" fill={`url(#oc-grad-${c.id})`} />
+            <ellipse cx="265" cy="72" rx="35" ry="25" fill={`url(#oc-grad-${c.id})`} />
+            {/* Top highlight overlay */}
+            <ellipse cx="140" cy="40" rx="90" ry="18" fill={`url(#oc-hl-${c.id})`} />
+            {/* Deep bottom shadow */}
+            <ellipse cx="150" cy="95" rx="130" ry="10" fill="rgba(51,65,85,0.25)" />
           </svg>
         </motion.div>
       ))}
 
-      {/* Static haze layer for depth */}
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-300/15 to-transparent" />
+      {/* Bottom haze for depth */}
+      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-300/20 to-transparent" />
     </>
   );
 }

@@ -443,17 +443,17 @@ function getSceneGradient(
 
   // Day scenes
   if (weatherCode === 3) {
-    // Overcast day — soft gray
-    return "bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950";
+    // Overcast day — flat gray
+    return "bg-gradient-to-b from-slate-400 via-slate-300 to-slate-200 dark:from-slate-600 dark:via-slate-500 dark:to-slate-400";
   }
   if (weatherCode === 0 || weatherCode === 1) {
     if (temperature >= 32) {
-      // Hot sunny day — warm orange
-      return "bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 dark:from-slate-900 dark:via-orange-950/30 dark:to-slate-900";
+      // Hot sunny day — hazy warm blue
+      return "bg-gradient-to-b from-sky-300 via-sky-200 to-orange-100 dark:from-sky-800 dark:via-sky-700 dark:to-orange-900/40";
     }
-    // Clear sunny day — warm amber
-    return "bg-gradient-to-br from-amber-50 via-rose-50 to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950";
+    // Clear sunny day — blue sky
+    return "bg-gradient-to-b from-sky-400 via-sky-300 to-sky-200 dark:from-sky-700 dark:via-sky-600 dark:to-sky-500";
   }
-  // Partly cloudy day
-  return "bg-gradient-to-br from-sky-50 via-amber-50 to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-sky-950";
+  // Partly cloudy day — blue sky
+  return "bg-gradient-to-b from-sky-400 via-sky-300 to-sky-200 dark:from-sky-700 dark:via-sky-600 dark:to-sky-500";
 }
