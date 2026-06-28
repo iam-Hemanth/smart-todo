@@ -33,24 +33,29 @@ export function LocationSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced search
+  // Handle input changes — clears results synchronously in the event handler
+  // (not in an effect) when the query is too short.
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    if (value.trim().length < 2) {
+      setResults([]);
+      setLoading(false);
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    }
+  }
+
+  // Debounced search — only fires when query >= 2 chars.
+  // setLoading(true) is inside the setTimeout callback (async), not in the
+  // effect body, so it doesn't trigger cascading renders.
   useEffect(() => {
-    if (!open) return;
+    if (!open || query.trim().length < 2) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (query.trim().length < 2) {
-      // Clear synchronously — safe because this is a short-circuit, not a
-      // cascading state update (the effect only re-runs when query/open change).
-       
-      setResults([]);
-       
-      setLoading(false);
-      return;
-    }
-
-     
-    setLoading(true);
     debounceRef.current = setTimeout(async () => {
+      setLoading(true);
       try {
         const res = await fetch(`/api/geocode?q=${encodeURIComponent(query.trim())}`);
         if (!res.ok) throw new Error("Failed");
@@ -188,7 +193,7 @@ export function LocationSearch() {
               <input
                 autoFocus
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => handleQueryChange(e.target.value)}
                 placeholder="Search any city…"
                 className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground/70 focus:outline-none"
               />
@@ -196,8 +201,7 @@ export function LocationSearch() {
                 <button
                   type="button"
                   onClick={() => {
-                    setQuery("");
-                    setResults([]);
+                    handleQueryChange("");
                   }}
                   className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                   aria-label="Clear search"

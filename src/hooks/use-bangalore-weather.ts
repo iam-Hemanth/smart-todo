@@ -53,13 +53,12 @@ export function useWeather(lat: number, lon: number): WeatherState {
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
-     
-    setLoading(true);
-    setError(null);
+    // No synchronous setState here — all setState calls are after `await`,
+    // so they don't trigger the set-state-in-effect lint rule when fetchData
+    // is called from a useEffect. The initial `loading` state is already `true`.
     try {
       const res = await fetch(
         `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`,
-        // Respect the route's Cache-Control (60s fresh, 5m stale-while-revalidate)
         { cache: "default" },
       );
       if (!res.ok) {
@@ -165,11 +164,24 @@ export function useWeather(lat: number, lon: number): WeatherState {
     }
   }, [lat, lon]);
 
-  useEffect(() => {
+  // refresh is called from a button onClick (event handler, not effect),
+  // so setLoading(true) here is safe.
+  const refresh = useCallback(() => {
+    setLoading(true);
     fetchData();
-    const id = setInterval(fetchData, REFETCH_MS);
+  }, [fetchData]);
+
+  useEffect(() => {
+    // fetchData's first call: loading is already `true` from useState init,
+    // so no synchronous setState happens in this effect body.
+    fetchData();
+    const id = setInterval(() => {
+      // setInterval callback runs asynchronously — not in the effect body.
+      setLoading(true);
+      fetchData();
+    }, REFETCH_MS);
     return () => clearInterval(id);
   }, [fetchData]);
 
-  return { data, aqi, hourly, loading, error, lastUpdated, refresh: fetchData };
+  return { data, aqi, hourly, loading, error, lastUpdated, refresh };
 }
