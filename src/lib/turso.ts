@@ -43,6 +43,16 @@ export function initDb(): Promise<void> {
           day TEXT PRIMARY KEY
         )
       `);
+
+      await turso.execute(`
+        CREATE TABLE IF NOT EXISTS notes (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      `);
     } catch (error) {
       dbInitialized = null; // Reset to allow retry on failure
       console.error("Database initialization failed:", error);

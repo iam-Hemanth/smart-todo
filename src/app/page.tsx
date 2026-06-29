@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle2, Sparkles, StickyNote } from "lucide-react";
 import { WeatherCard } from "@/components/weather-card";
 import { AddTodo } from "@/components/todos/add-todo";
 import { FilterTabs } from "@/components/todos/filter-tabs";
@@ -13,19 +13,24 @@ import { StreakBadge, useStreakStore } from "@/components/streak-badge";
 import { AccentPicker } from "@/components/accent-picker";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { TodaySummaryPill } from "@/components/today-summary-pill";
+import { NotesList } from "@/components/notes/notes-list";
 import { useStreakWatcher } from "@/hooks/use-streak-watcher";
 import { useConfettiOnAllDone } from "@/hooks/use-confetti-on-all-done";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useTodoStore } from "@/store/todo-store";
+import { useNotesStore } from "@/store/notes-store";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [isRaining, setIsRaining] = useState(false);
+  const [activeTab, setActiveTab] = useState<"tasks" | "notes">("tasks");
   const hydrated = useHydrated();
 
-  // Load tasks and streaks on mount
+  // Load tasks, streaks, and notes on mount
   useEffect(() => {
     useTodoStore.getState().loadFromServer();
     useStreakStore.getState().loadFromServer();
+    useNotesStore.getState().loadFromServer();
   }, []);
 
   const handleRainChange = useCallback((raining: boolean) => {
@@ -157,65 +162,130 @@ export default function Home() {
         {/* Weather card */}
         <WeatherCard onRainChange={handleRainChange} />
 
-        {/* Subheader for the list */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mt-8 mb-3 flex items-center gap-2"
-        >
-          <Sparkles className="anim-float h-4 w-4 text-amber-500" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Your tasks
-          </h2>
-        </motion.div>
+        {/* Tab switcher */}
+        <div className="mt-8 flex justify-center">
+          <div className="inline-flex rounded-full border border-white/40 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] p-1 backdrop-blur-md shadow-sm">
+            <button
+              onClick={() => setActiveTab("tasks")}
+              className={cn(
+                "rounded-full px-5 py-1.5 text-xs font-semibold transition-all border border-transparent cursor-pointer",
+                activeTab === "tasks"
+                  ? "text-white shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              style={activeTab === "tasks" ? { backgroundColor: "var(--accent-custom, #10b981)" } : undefined}
+            >
+              Tasks
+            </button>
+            <button
+              onClick={() => setActiveTab("notes")}
+              className={cn(
+                "rounded-full px-5 py-1.5 text-xs font-semibold transition-all border border-transparent cursor-pointer",
+                activeTab === "notes"
+                  ? "text-white shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              style={activeTab === "notes" ? { backgroundColor: "var(--accent-custom, #10b981)" } : undefined}
+            >
+              Notes
+            </button>
+          </div>
+        </div>
 
-        {/* Add todo form */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
-          <AddTodo />
-        </motion.div>
+        {activeTab === "tasks" ? (
+          <>
+            {/* Subheader for the list */}
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-8 mb-3 flex items-center gap-2"
+            >
+              <Sparkles className="anim-float h-4 w-4 text-amber-500" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Your tasks
+              </h2>
+            </motion.div>
 
-        {/* Today summary pill — gated on hydration to avoid SSR mismatch */}
-        {hydrated && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.18 }}
-            className="mt-4"
-          >
-            <TodaySummaryPill isRaining={isRaining} />
-          </motion.div>
+            {/* Add todo form */}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <AddTodo />
+            </motion.div>
+
+            {/* Today summary pill — gated on hydration to avoid SSR mismatch */}
+            {hydrated && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18 }}
+                className="mt-4"
+              >
+                <TodaySummaryPill isRaining={isRaining} />
+              </motion.div>
+            )}
+
+            {/* Stats + filters — gated on hydration */}
+            {hydrated && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-4 space-y-4"
+              >
+                <StatsBar />
+                <FilterTabs />
+              </motion.div>
+            )}
+
+            {/* List — gated on hydration */}
+            <main className="mt-4 flex-1 pb-12">
+              {hydrated ? (
+                <TodoList isRaining={isRaining} />
+              ) : (
+                <div className="space-y-2">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="h-20 rounded-2xl bg-muted/30 animate-pulse" />
+                  ))}
+                </div>
+              )}
+            </main>
+          </>
+        ) : (
+          <>
+            {/* Subheader for notes */}
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-8 mb-3 flex items-center gap-2"
+            >
+              <StickyNote className="anim-float h-4 w-4 text-emerald-500" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Your notes
+              </h2>
+            </motion.div>
+
+            {/* Notes List component */}
+            <main className="mt-4 flex-1 pb-12">
+              {hydrated ? (
+                <NotesList />
+              ) : (
+                <div className="space-y-4">
+                  <div className="h-11 rounded-2xl bg-muted/30 animate-pulse" />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className="h-32 rounded-2xl bg-muted/30 animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </main>
+          </>
         )}
-
-        {/* Stats + filters — gated on hydration */}
-        {hydrated && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-4 space-y-4"
-          >
-            <StatsBar />
-            <FilterTabs />
-          </motion.div>
-        )}
-
-        {/* List — gated on hydration */}
-        <main className="mt-4 flex-1 pb-12">
-          {hydrated ? (
-            <TodoList isRaining={isRaining} />
-          ) : (
-            <div className="space-y-2">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="h-20 rounded-2xl bg-muted/30 animate-pulse" />
-              ))}
-            </div>
-          )}
-        </main>
 
         {/* Footer */}
         <footer className="mt-auto pt-6 text-center text-xs text-muted-foreground">

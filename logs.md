@@ -38,3 +38,12 @@
 - Modified request verification helper `checkAuth` in `src/lib/auth.ts` to trust same-origin calls automatically (verified by checking standard browser header `sec-fetch-site === "same-origin"` or comparing request `referer` host with `host` header).
 - Maintained requirement of `Authorization: Bearer <PERSONAL_API_TOKEN>` for any calls arriving from outside origins (e.g. curl or iOS Shortcuts).
 - Confirmed type safety and page rendering parameters with a successful production build.
+
+## [2026-06-29] Prompt 4: Add Notes Feature with Turso sync, API CRUD, and Zustand optimistic UI
+- Created a `notes` table schema in the Turso database (`id`, `title`, `content`, `created_at`, `updated_at`).
+- Added Edge Runtime API endpoints under `/api/notes` and `/api/notes/[id]` supporting standard CRUD operations, protected by same-origin trusted authentication.
+- Implemented a notes state store at `src/store/notes-store.ts` that triggers local state changes immediately and performs API syncing in the background with Sonner error handling and automatic rollbacks on connection failures.
+- Implemented Note editor and creator composable dialog popup at `src/components/notes/note-dialog.tsx` utilizing standard Shadcn `Dialog` primitives.
+- Built a searchable Grid cards list of notes at `src/components/notes/notes-list.tsx` showing text previews, last updated times, and delete actions.
+- Introduced a glassmorphic segmented tab selection switcher (Tasks / Notes) inside `src/app/page.tsx` that coordinates view state swapping, matching theme color accents automatically.
+- Verified that compiling, routing, and packaging completes cleanly via a successful production build.

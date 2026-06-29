@@ -3,9 +3,10 @@
 ## Key Architectural Decisions
 - **App Router**: Next.js App Router is used. All dynamic pages and server-side routes are inside `src/app/`.
 - **Hybrid Data Persistence**:
-  - **Remote Sync (Turso SQL Database)**: Todos and Streaks data are stored in a cloud-hosted Turso database. Data synchronization runs asynchronously in the background. If a write fails (e.g. offline status), the changes are rolled back in the Zustand state and a visible error toast is displayed via Sonner. No complex offline queueing or merge replica is configured to maintain codebase simplicity.
+  - **Remote Sync (Turso SQL Database)**: Todos, Streaks, and Notes data are stored in a cloud-hosted Turso database. Data synchronization runs asynchronously in the background. If a write fails (e.g. offline status), the changes are rolled back in the Zustand state and a visible error toast is displayed via Sonner. No complex offline queueing or merge replica is configured to maintain codebase simplicity.
   - **Local-Only (localStorage)**: User settings (Primary Accent color label) and Location details (latitude, longitude, city name, country) remain strictly stored in local storage to optimize access speeds and prevent cross-device settings collision.
 - **SSR Hydration Guarding**: Since the application renders client-side values and requires loading records from the database on mount, components rely on the `useHydrated` custom hook or loading boundaries. During initial page loading, a skeleton loader is displayed, preventing React hydration mismatch warnings.
+- **View Tab Switcher**: A custom glassmorphic segmented tab selection controller swaps the primary home content between "Tasks" and "Notes" views, maintaining a clean, single-screen dashboard layout.
 
 ## Database Schema Choices
 - **Todos Table**: Structures tasks using columns matching the `Todo` interface properties:
@@ -25,9 +26,15 @@
   - `sort_order` (integer, preserves drag-and-drop array list ordering)
 - **Streak Days Table**: Records calendar completions in a single column table:
   - `day` (text, primary key, YYYY-MM-DD format). Inserts are idempotent (`INSERT OR IGNORE`).
+- **Notes Table**: Stores persistent notes data:
+  - `id` (text, primary key)
+  - `title` (text, not null)
+  - `content` (text, not null)
+  - `created_at` (integer, timestamp)
+  - `updated_at` (integer, timestamp)
 
 ## Shared-Secret Authentication & Same-Origin Trust
-- Backend API routes under `/api/todos` and `/api/streak` validate requests based on origin source:
+- Backend API routes under `/api/todos`, `/api/streak`, and `/api/notes` validate requests based on origin source:
   - **Same-Origin Requests**: Browser client requests originating from the app are automatically trusted. This is validated by verifying `sec-fetch-site === "same-origin"` or comparing request `referer` host with `host` headers.
   - **External Requests**: Requests coming from external endpoints (e.g. iOS Shortcuts, Postman, curl) are authenticated against the server-only `PERSONAL_API_TOKEN` environment variable via the `Authorization: Bearer <PERSONAL_API_TOKEN>` header.
 - **Security Tradeoffs Choice**:
