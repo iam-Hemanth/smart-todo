@@ -51,7 +51,7 @@ export function NotesList() {
         <button
           onClick={handleOpenCreate}
           style={{ backgroundColor: "var(--accent-custom, #10b981)" }}
-          className="inline-flex items-center gap-1.5 rounded-2xl text-white px-4 h-11 text-sm font-semibold hover:opacity-90 transition-all shadow-sm shrink-0"
+          className="inline-flex items-center gap-1.5 rounded-xl text-white px-4 h-11 text-sm font-medium hover:opacity-90 transition-all shadow-sm shrink-0"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New Note</span>
@@ -83,9 +83,10 @@ export function NotesList() {
                 layout
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
                 className={cn(
-                  "group relative overflow-hidden rounded-2xl border p-4 cursor-pointer",
+                  "group anim-lift relative overflow-hidden rounded-2xl border p-4 cursor-pointer",
                   "border-white/50 dark:border-white/5 bg-white/70 dark:bg-white/[0.03]",
                   "hover:shadow-md hover:bg-white dark:hover:bg-white/[0.05] transition-all flex flex-col justify-between min-h-[140px]"
                 )}

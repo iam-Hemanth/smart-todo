@@ -108,7 +108,7 @@ export function NoteDialog({ note, open, onOpenChange }: NoteDialogProps) {
               type="submit"
               disabled={submitting || !title.trim() || !content.trim()}
               style={{ backgroundColor: "var(--accent-custom, #10b981)" }}
-              className="rounded-xl text-white px-5 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-1 sm:flex-initial"
+              className="rounded-xl text-white px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-1 sm:flex-initial"
             >
               {note ? "Save Changes" : "Create Note"}
             </button>

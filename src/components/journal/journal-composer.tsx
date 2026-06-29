@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { ImagePlus, X, Loader2 } from "lucide-react";
+import { ImagePlus, X, Loader2, BookOpen } from "lucide-react";
 import { useJournalStore } from "@/store/journal-store";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -76,13 +76,17 @@ export function JournalComposer() {
   return (
     <div className="rounded-3xl border border-white/40 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl p-4 sm:p-5 shadow-sm space-y-4">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+            <BookOpen className="h-5 w-5" />
+          </div>
           <Textarea
             placeholder="Write down what you did, thought, or felt today..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
             disabled={isSubmitting}
-            className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm placeholder:text-muted-foreground/75 focus-visible:ring-emerald-400/40 focus-visible:border-emerald-500 min-h-[100px] resize-y leading-relaxed"
+            rows={1}
+            className="rounded-2xl border border-border/60 bg-background/40 px-4 py-2.5 text-sm placeholder:text-muted-foreground/70 focus-visible:ring-emerald-400/40 focus-visible:border-emerald-500 min-h-[80px] resize-y leading-relaxed flex-1"
           />
         </div>
 
@@ -147,7 +151,7 @@ export function JournalComposer() {
               type="submit"
               disabled={isSubmitting || !content.trim()}
               style={{ backgroundColor: "var(--accent-custom, #10b981)" }}
-              className="rounded-xl text-white px-5 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              className="rounded-xl text-white px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               Post Entry
             </button>

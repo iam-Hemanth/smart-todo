@@ -120,7 +120,7 @@ export function HabitsList() {
           {!isToday(currentDate) && (
             <button
               onClick={handleToday}
-              className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg hover:bg-emerald-500/20 transition-colors"
+              className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full hover:bg-emerald-500/20 transition-colors"
             >
               Today
             </button>
@@ -137,14 +137,17 @@ export function HabitsList() {
       {/* Habit Composer Card */}
       <div className="rounded-3xl border border-white/40 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl p-4 sm:p-5 shadow-sm space-y-4">
         <form onSubmit={handleCreateHabit} className="space-y-4">
-          <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+              <Activity className="h-5 w-5" />
+            </div>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Meditate, Drink water..."
               disabled={isAdding}
               required
-              className="h-11 rounded-2xl border border-border/60 bg-background/45 px-4 focus-visible:ring-emerald-400/40 focus-visible:border-emerald-500 placeholder:text-muted-foreground/75"
+              className="h-10 flex-1 rounded-2xl border border-border/60 bg-background/45 px-4 focus-visible:ring-emerald-400/40 focus-visible:border-emerald-500 placeholder:text-muted-foreground/70"
             />
           </div>
 
@@ -185,7 +188,7 @@ export function HabitsList() {
               type="submit"
               disabled={isAdding || !name.trim()}
               style={{ backgroundColor: "var(--accent-custom, #10b981)" }}
-              className="rounded-xl text-white px-5 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm ml-auto"
+              className="rounded-xl text-white px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm ml-auto"
             >
               Add Habit
             </button>
@@ -224,12 +227,14 @@ export function HabitsList() {
                 <motion.div
                   key={habit.id}
                   layout
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  transition={{ type: "spring", stiffness: 350, damping: 28 }}
                   className={cn(
-                    "group relative overflow-hidden rounded-2xl border p-4 flex items-center justify-between gap-4",
+                    "group anim-lift relative overflow-hidden rounded-2xl border p-4 flex items-center justify-between gap-4",
                     "border-white/50 dark:border-white/5 bg-white/70 dark:bg-white/[0.03]",
+                    "hover:shadow-md hover:bg-white dark:hover:bg-white/[0.05] transition-all",
                     isCompleted && "bg-emerald-500/5 border-emerald-500/20 dark:bg-emerald-500/[0.02]"
                   )}
                 >

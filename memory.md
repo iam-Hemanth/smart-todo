@@ -8,6 +8,14 @@
 - **SSR Hydration Guarding**: Since the application renders client-side values and requires loading records from the database on mount, components rely on the `useHydrated` custom hook or loading boundaries. During initial page loading, a skeleton loader is displayed, preventing React hydration mismatch warnings.
 - **View Tab Switcher**: A custom glassmorphic segmented tab selection controller swaps the primary home content between "Tasks", "Notes", "Journal", and "Habits" views, maintaining a clean, single-screen dashboard layout.
 
+## Visual Language & Design Standards (Tasks Reference Standard)
+- **Cards**: Elements use a standard layout of `rounded-2xl`, border definitions `border-white/50 dark:border-white/5 bg-white/70 dark:bg-white/[0.03]`, and hover actions `hover:shadow-md hover:bg-white dark:hover:bg-white/[0.05]`.
+- **Micro-animations**: Cards use `anim-lift` classes to animate hover state coordinates.
+- **Framer Motion Springs**: List transitions are standardized to spring animations `{ type: "spring", stiffness: 350, damping: 28 }`, and items fade and slide left on deletion (`exit={{ opacity: 0, x: -16 }}`).
+- **Form Composers**: Composer card forms use `rounded-3xl border-white/40 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl p-4 sm:p-5 shadow-sm`.
+- **Icon Adornments**: Input fields include a prominent themed icon wrapper in a colored container (e.g. `Plus` in Tasks, `BookOpen` in Journal, `Activity` in Habits) to structure inputs visually.
+- **Buttons**: Action and primary submit buttons utilize `rounded-xl`, h-10 sizes, and a `font-medium` (not `font-semibold`) typography weight.
+
 ## Database Schema Choices
 - **Todos Table**: Structures tasks using columns matching the `Todo` interface properties:
   - `id` (text, primary key)

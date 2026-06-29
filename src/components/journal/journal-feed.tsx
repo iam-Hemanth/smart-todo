@@ -45,7 +45,7 @@ export function JournalFeed() {
   };
 
   return (
-    <div className="space-y-8 mt-6">
+    <div className="space-y-6">
       {loading ? (
         <div className="space-y-6">
           {[0, 1].map((i) => (
@@ -66,7 +66,7 @@ export function JournalFeed() {
           </p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6">
           <AnimatePresence mode="popLayout">
             {groupedEntries.map(([dayLabel, dayEntries]) => (
               <motion.div
@@ -82,15 +82,17 @@ export function JournalFeed() {
                   {dayLabel}
                 </h3>
 
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {dayEntries.map((entry) => (
                     <motion.div
                       key={entry.id}
                       layout
-                      initial={{ opacity: 0, y: 4 }}
+                      initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -16 }}
+                      transition={{ type: "spring", stiffness: 350, damping: 28 }}
                       className={cn(
-                        "group relative overflow-hidden rounded-3xl border p-4 sm:p-5 cursor-pointer",
+                        "group anim-lift relative overflow-hidden rounded-2xl border p-4 sm:p-5 cursor-pointer",
                         "border-white/50 dark:border-white/5 bg-white/70 dark:bg-white/[0.03]",
                         "hover:shadow-md hover:bg-white dark:hover:bg-white/[0.05] transition-all flex flex-col gap-3"
                       )}
