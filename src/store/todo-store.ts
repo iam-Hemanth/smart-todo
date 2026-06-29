@@ -1,8 +1,9 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { useShallow } from "zustand/react/shallow";
+import { apiFetch } from "@/lib/api-client";
+import { toast } from "sonner";
 
 export type TodoCategory = "indoor" | "outdoor";
 export type TodoPriority = "low" | "medium" | "high";
@@ -48,6 +49,8 @@ export type FilterKey = "all" | "active" | "completed" | "outdoor" | "indoor" | 
 interface TodoState {
   todos: Todo[];
   filter: FilterKey;
+  loading: boolean;
+  loadFromServer: () => Promise<void>;
   addTodo: (input: {
     text: string;
     category: TodoCategory;
@@ -86,173 +89,309 @@ function isOverdue(t: Todo): boolean {
   return due.getTime() < today.getTime();
 }
 
-export const useTodoStore = create<TodoState>()(
-  persist(
-    (set) => ({
-      todos: [
-        {
-          id: "seed-1",
-          text: "Morning run at Cubbon Park",
-          category: "outdoor",
-          priority: "high",
-          completed: false,
-          createdAt: 1735689600000, // fixed timestamp — avoids SSR/CSR mismatch
-          dueDate: undefined, // computed on client after hydration to avoid mismatch
-          tags: ["fitness"],
-          estimateMinutes: 30,
-          color: "emerald",
-        },
-        {
-          id: "seed-2",
-          text: "Finish quarterly design review",
-          category: "indoor",
-          priority: "high",
-          completed: false,
-          createdAt: 1735689540000,
-          tags: ["work"],
-          estimateMinutes: 90,
-          color: "violet",
-        },
-        {
-          id: "seed-3",
-          text: "Water the balcony plants",
-          category: "outdoor",
-          priority: "low",
-          completed: true,
-          createdAt: 1735686000000,
-          completedAt: 1735687800000,
-          color: "emerald",
-        },
-        {
-          id: "seed-4",
-          text: "Reply to weekend brunch invite",
-          category: "indoor",
-          priority: "medium",
-          completed: false,
-          createdAt: 1735684200000,
-          tags: ["personal"],
-          color: "amber",
-        },
-      ],
-      filter: "all",
+export const useTodoStore = create<TodoState>((set, get) => ({
+  todos: [],
+  filter: "all",
+  loading: true,
 
-      addTodo: (input) =>
-        set((state) => ({
-          todos: [
-            {
-              id: uid(),
-              text: input.text.trim(),
-              category: input.category,
-              priority: input.priority,
-              completed: false,
-              createdAt: Date.now(),
-              dueDate: input.dueDate,
-              tags: input.tags?.filter((t) => t.trim().length > 0),
-              notes: input.notes,
-              estimateMinutes: input.estimateMinutes,
-              color: input.color,
-              subtasks: input.subtasks,
-            },
-            ...state.todos,
-          ],
-        })),
+  loadFromServer: async () => {
+    try {
+      set({ loading: true });
+      const res = await apiFetch("/api/todos");
+      if (!res.ok) throw new Error("Failed to load tasks");
+      const data = await res.json();
+      set({ todos: data.todos || [], loading: false });
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load tasks from server.");
+      set({ loading: false });
+    }
+  },
 
-      toggleTodo: (id) =>
-        set((state) => ({
-          todos: state.todos.map((t) =>
-            t.id === id
-              ? {
-                  ...t,
-                  completed: !t.completed,
-                  completedAt: !t.completed ? Date.now() : undefined,
-                }
-              : t,
-          ),
-        })),
+  addTodo: (input) => {
+    const newTodo: Todo = {
+      id: uid(),
+      text: input.text.trim(),
+      category: input.category,
+      priority: input.priority,
+      completed: false,
+      createdAt: Date.now(),
+      dueDate: input.dueDate,
+      tags: input.tags?.filter((t) => t.trim().length > 0),
+      notes: input.notes,
+      estimateMinutes: input.estimateMinutes,
+      color: input.color,
+      subtasks: input.subtasks || [],
+    };
 
-      deleteTodo: (id) =>
-        set((state) => ({ todos: state.todos.filter((t) => t.id !== id) })),
+    // Optimistic Update
+    set((state) => ({ todos: [newTodo, ...state.todos] }));
 
-      editTodo: (id, patch) =>
-        set((state) => ({
-          todos: state.todos.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-        })),
+    apiFetch("/api/todos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTodo),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to add task: ${error.message || error}`);
+      // Rollback
+      set((state) => ({ todos: state.todos.filter((t) => t.id !== newTodo.id) }));
+    });
+  },
 
-      clearCompleted: () =>
-        set((state) => ({
-          todos: state.todos.filter((t) => !t.completed),
-        })),
+  toggleTodo: (id) => {
+    const todo = get().todos.find((t) => t.id === id);
+    if (!todo) return;
 
-      reorder: (fromId, toId) =>
-        set((state) => {
-          if (fromId === toId) return state;
-          const idxFrom = state.todos.findIndex((t) => t.id === fromId);
-          const idxTo = state.todos.findIndex((t) => t.id === toId);
-          if (idxFrom === -1 || idxTo === -1) return state;
-          const next = [...state.todos];
-          const [moved] = next.splice(idxFrom, 1);
-          next.splice(idxTo, 0, moved);
-          return { todos: next };
-        }),
+    const nextCompleted = !todo.completed;
+    const nextCompletedAt = nextCompleted ? Date.now() : undefined;
 
-      setFilter: (filter) => set({ filter }),
+    // Optimistic Update
+    set((state) => ({
+      todos: state.todos.map((t) =>
+        t.id === id ? { ...t, completed: nextCompleted, completedAt: nextCompletedAt } : t
+      ),
+    }));
 
-      addSubtask: (todoId, text) =>
-        set((state) => ({
-          todos: state.todos.map((t) =>
-            t.id === todoId
-              ? {
-                  ...t,
-                  subtasks: [
-                    ...(t.subtasks ?? []),
-                    { id: uid(), text: text.trim(), done: false },
-                  ],
-                }
-              : t,
-          ),
-        })),
+    apiFetch(`/api/todos/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: nextCompleted, completedAt: nextCompletedAt }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to update task: ${error.message || error}`);
+      // Rollback
+      set((state) => ({
+        todos: state.todos.map((t) =>
+          t.id === id ? { ...t, completed: todo.completed, completedAt: todo.completedAt } : t
+        ),
+      }));
+    });
+  },
 
-      toggleSubtask: (todoId, subtaskId) =>
-        set((state) => ({
-          todos: state.todos.map((t) =>
-            t.id === todoId
-              ? {
-                  ...t,
-                  subtasks: t.subtasks?.map((s) =>
-                    s.id === subtaskId ? { ...s, done: !s.done } : s,
-                  ),
-                }
-              : t,
-          ),
-        })),
+  deleteTodo: (id) => {
+    const todo = get().todos.find((t) => t.id === id);
+    if (!todo) return;
 
-      deleteSubtask: (todoId, subtaskId) =>
-        set((state) => ({
-          todos: state.todos.map((t) =>
-            t.id === todoId
-              ? {
-                  ...t,
-                  subtasks: t.subtasks?.filter((s) => s.id !== subtaskId),
-                }
-              : t,
-          ),
-        })),
-    }),
-    {
-      name: "smart-todo:v2",
-      version: 2,
-      partialize: (state) => ({ todos: state.todos, filter: state.filter }),
-      migrate: (persisted: unknown) => {
-        // Migrate v1 -> v2: just keep todos/filter, missing fields will be undefined
-        const p = (persisted ?? {}) as { todos?: Todo[]; filter?: FilterKey };
-        return {
-          todos: (p.todos ?? []).map((t) => ({ ...t })),
-          filter: p.filter ?? "all",
-        };
-      },
-    },
-  ),
-);
+    // Optimistic Update
+    set((state) => ({ todos: state.todos.filter((t) => t.id !== id) }));
+
+    apiFetch(`/api/todos/${id}`, {
+      method: "DELETE",
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to delete task: ${error.message || error}`);
+      // Rollback (re-insert)
+      set((state) => ({ todos: [todo, ...state.todos] }));
+    });
+  },
+
+  editTodo: (id, patch) => {
+    const todo = get().todos.find((t) => t.id === id);
+    if (!todo) return;
+
+    // Optimistic Update
+    set((state) => ({
+      todos: state.todos.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    }));
+
+    apiFetch(`/api/todos/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to save task changes: ${error.message || error}`);
+      // Rollback
+      set((state) => ({
+        todos: state.todos.map((t) => (t.id === id ? { ...t, ...todo } : t)),
+      }));
+    });
+  },
+
+  clearCompleted: () => {
+    const completedTodos = get().todos.filter((t) => t.completed);
+    if (completedTodos.length === 0) return;
+
+    // Optimistic Update
+    set((state) => ({
+      todos: state.todos.filter((t) => !t.completed),
+    }));
+
+    apiFetch("/api/todos/clear-completed", {
+      method: "POST",
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to clear completed tasks: ${error.message || error}`);
+      // Rollback
+      set((state) => ({ todos: [...state.todos, ...completedTodos] }));
+    });
+  },
+
+  reorder: (fromId, toId) => {
+    const previousTodos = get().todos;
+    if (fromId === toId) return;
+
+    const idxFrom = previousTodos.findIndex((t) => t.id === fromId);
+    const idxTo = previousTodos.findIndex((t) => t.id === toId);
+    if (idxFrom === -1 || idxTo === -1) return;
+
+    const next = [...previousTodos];
+    const [moved] = next.splice(idxFrom, 1);
+    next.splice(idxTo, 0, moved);
+
+    // Optimistic Update
+    set({ todos: next });
+
+    apiFetch("/api/todos/reorder", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: next.map((t) => t.id) }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to save task order: ${error.message || error}`);
+      // Rollback
+      set({ todos: previousTodos });
+    });
+  },
+
+  setFilter: (filter) => set({ filter }),
+
+  addSubtask: (todoId, text) => {
+    const todo = get().todos.find((t) => t.id === todoId);
+    if (!todo) return;
+
+    const newSubtask = { id: uid(), text: text.trim(), done: false };
+    const nextSubtasks = [...(todo.subtasks ?? []), newSubtask];
+
+    // Optimistic Update
+    set((state) => ({
+      todos: state.todos.map((t) =>
+        t.id === todoId ? { ...t, subtasks: nextSubtasks } : t
+      ),
+    }));
+
+    apiFetch(`/api/todos/${todoId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subtasks: nextSubtasks }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to add subtask: ${error.message || error}`);
+      // Rollback
+      set((state) => ({
+        todos: state.todos.map((t) =>
+          t.id === todoId ? { ...t, subtasks: todo.subtasks || [] } : t
+        ),
+      }));
+    });
+  },
+
+  toggleSubtask: (todoId, subtaskId) => {
+    const todo = get().todos.find((t) => t.id === todoId);
+    if (!todo) return;
+
+    const nextSubtasks = (todo.subtasks ?? []).map((s) =>
+      s.id === subtaskId ? { ...s, done: !s.done } : s
+    );
+
+    // Optimistic Update
+    set((state) => ({
+      todos: state.todos.map((t) =>
+        t.id === todoId ? { ...t, subtasks: nextSubtasks } : t
+      ),
+    }));
+
+    apiFetch(`/api/todos/${todoId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subtasks: nextSubtasks }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to update subtask: ${error.message || error}`);
+      // Rollback
+      set((state) => ({
+        todos: state.todos.map((t) =>
+          t.id === todoId ? { ...t, subtasks: todo.subtasks || [] } : t
+        ),
+      }));
+    });
+  },
+
+  deleteSubtask: (todoId, subtaskId) => {
+    const todo = get().todos.find((t) => t.id === todoId);
+    if (!todo) return;
+
+    const nextSubtasks = (todo.subtasks ?? []).filter((s) => s.id !== subtaskId);
+
+    // Optimistic Update
+    set((state) => ({
+      todos: state.todos.map((t) =>
+        t.id === todoId ? { ...t, subtasks: nextSubtasks } : t
+      ),
+    }));
+
+    apiFetch(`/api/todos/${todoId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subtasks: nextSubtasks }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to delete subtask: ${error.message || error}`);
+      // Rollback
+      set((state) => ({
+        todos: state.todos.map((t) =>
+          t.id === todoId ? { ...t, subtasks: todo.subtasks || [] } : t
+        ),
+      }));
+    });
+  },
+}));
 
 export function selectFiltered(state: TodoState): Todo[] {
   const { todos, filter } = state;
@@ -283,7 +422,6 @@ export function selectStats(state: TodoState) {
   return { total, completed, active, outdoor, indoor, overdue, pct };
 }
 
-/** Returns the set of all tags used across todos, for autocomplete. */
 export function selectAllTags(state: TodoState): string[] {
   const set = new Set<string>();
   for (const t of state.todos) {

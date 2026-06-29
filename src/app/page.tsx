@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Sparkles } from "lucide-react";
 import { WeatherCard } from "@/components/weather-card";
@@ -9,17 +9,24 @@ import { FilterTabs } from "@/components/todos/filter-tabs";
 import { StatsBar } from "@/components/todos/stats-bar";
 import { TodoList } from "@/components/todos/todo-list";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { StreakBadge } from "@/components/streak-badge";
+import { StreakBadge, useStreakStore } from "@/components/streak-badge";
 import { AccentPicker } from "@/components/accent-picker";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { TodaySummaryPill } from "@/components/today-summary-pill";
 import { useStreakWatcher } from "@/hooks/use-streak-watcher";
 import { useConfettiOnAllDone } from "@/hooks/use-confetti-on-all-done";
 import { useHydrated } from "@/hooks/use-hydrated";
+import { useTodoStore } from "@/store/todo-store";
 
 export default function Home() {
   const [isRaining, setIsRaining] = useState(false);
   const hydrated = useHydrated();
+
+  // Load tasks and streaks on mount
+  useEffect(() => {
+    useTodoStore.getState().loadFromServer();
+    useStreakStore.getState().loadFromServer();
+  }, []);
 
   const handleRainChange = useCallback((raining: boolean) => {
     setIsRaining(raining);

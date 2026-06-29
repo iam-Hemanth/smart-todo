@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { motion } from "framer-motion";
 import { Flame } from "lucide-react";
 import {
@@ -11,10 +10,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api-client";
+import { toast } from "sonner";
 
 interface StreakState {
   /** Set of ISO date strings (YYYY-MM-DD) on which at least one task was completed. */
   completionDays: string[];
+  loading: boolean;
+  loadFromServer: () => Promise<void>;
   record: (date?: Date) => void;
 }
 
@@ -28,22 +31,46 @@ function startOfDay(d: Date): Date {
   return c;
 }
 
-export const useStreakStore = create<StreakState>()(
-  persist(
-    (set) => ({
-      completionDays: [],
-      record: (date) => {
-        const day = isoDay(date ?? new Date());
-        set((s) =>
-          s.completionDays.includes(day)
-            ? s
-            : { completionDays: [...s.completionDays, day] },
-        );
-      },
-    }),
-    { name: "smart-todo-streak:v1" },
-  ),
-);
+export const useStreakStore = create<StreakState>((set, get) => ({
+  completionDays: [],
+  loading: true,
+  loadFromServer: async () => {
+    try {
+      set({ loading: true });
+      const res = await apiFetch("/api/streak");
+      if (!res.ok) throw new Error("Failed to load streak");
+      const data = await res.json();
+      set({ completionDays: data.completionDays || [], loading: false });
+    } catch (error) {
+      console.error(error);
+      set({ loading: false });
+    }
+  },
+  record: (date) => {
+    const day = isoDay(date ?? new Date());
+    const previousDays = get().completionDays;
+    if (previousDays.includes(day)) return;
+
+    // Optimistic Update
+    set({ completionDays: [...previousDays, day] });
+
+    apiFetch("/api/streak", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ day }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to sync");
+      }
+    }).catch((error) => {
+      console.error(error);
+      toast.error(`Failed to record streak: ${error.message || error}`);
+      // Rollback
+      set({ completionDays: previousDays });
+    });
+  },
+}));
 
 export function computeStreak(days: string[]): number {
   if (days.length === 0) return 0;
