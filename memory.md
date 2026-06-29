@@ -3,10 +3,10 @@
 ## Key Architectural Decisions
 - **App Router**: Next.js App Router is used. All dynamic pages and server-side routes are inside `src/app/`.
 - **Hybrid Data Persistence**:
-  - **Remote Sync (Turso SQL Database)**: Todos, Streaks, and Notes data are stored in a cloud-hosted Turso database. Data synchronization runs asynchronously in the background. If a write fails (e.g. offline status), the changes are rolled back in the Zustand state and a visible error toast is displayed via Sonner. No complex offline queueing or merge replica is configured to maintain codebase simplicity.
+  - **Remote Sync (Turso SQL Database)**: Todos, Streaks, Notes, and Journal entries data are stored in a cloud-hosted Turso database. Data synchronization runs asynchronously in the background. If a write fails (e.g. offline status), the changes are rolled back in the Zustand state and a visible error toast is displayed via Sonner. No complex offline queueing or merge replica is configured to maintain codebase simplicity.
   - **Local-Only (localStorage)**: User settings (Primary Accent color label) and Location details (latitude, longitude, city name, country) remain strictly stored in local storage to optimize access speeds and prevent cross-device settings collision.
 - **SSR Hydration Guarding**: Since the application renders client-side values and requires loading records from the database on mount, components rely on the `useHydrated` custom hook or loading boundaries. During initial page loading, a skeleton loader is displayed, preventing React hydration mismatch warnings.
-- **View Tab Switcher**: A custom glassmorphic segmented tab selection controller swaps the primary home content between "Tasks" and "Notes" views, maintaining a clean, single-screen dashboard layout.
+- **View Tab Switcher**: A custom glassmorphic segmented tab selection controller swaps the primary home content between "Tasks", "Notes", and "Journal" views, maintaining a clean, single-screen dashboard layout.
 
 ## Database Schema Choices
 - **Todos Table**: Structures tasks using columns matching the `Todo` interface properties:
@@ -32,9 +32,16 @@
   - `content` (text, not null)
   - `created_at` (integer, timestamp)
   - `updated_at` (integer, timestamp)
+- **Journal Entries Table**: Stores journal entries data with optional images:
+  - `id` (text, primary key)
+  - `content` (text, not null)
+  - `mood` (text, nullable, reserved for future use)
+  - `image_urls` (text, JSON array of Cloudinary secure URLs)
+  - `created_at` (integer, timestamp)
+  - `updated_at` (integer, timestamp)
 
 ## Shared-Secret Authentication & Same-Origin Trust
-- Backend API routes under `/api/todos`, `/api/streak`, and `/api/notes` validate requests based on origin source:
+- Backend API routes under `/api/todos`, `/api/streak`, `/api/notes`, and `/api/journal` validate requests based on origin source:
   - **Same-Origin Requests**: Browser client requests originating from the app are automatically trusted. This is validated by verifying `sec-fetch-site === "same-origin"` or comparing request `referer` host with `host` headers.
   - **External Requests**: Requests coming from external endpoints (e.g. iOS Shortcuts, Postman, curl) are authenticated against the server-only `PERSONAL_API_TOKEN` environment variable via the `Authorization: Bearer <PERSONAL_API_TOKEN>` header.
 - **Security Tradeoffs Choice**:
@@ -42,6 +49,11 @@
   - *Tradeoffs*:
     - **Pros**: Client-side Javascript does not contain or bundle secret keys, entirely eliminating leaks of sensitive variables in production builds. Keeps frontend config simple.
     - **Cons**: If specific browser extensions or proxy settings strip referers/sec-fetch headers, browser requests could fail authentication. However, standard browsers default to sending these parameters for normal web app fetch operations.
+
+## Cloudinary Image Upload Architecture
+- **Signed Server-Side Uploads**: Rather than performing unsigned client-side uploads directly from the browser, we route all image uploads through our Next.js API endpoint `/api/journal/upload`.
+  - **Security Rationale**: Unsigned uploads require storing an upload preset on the client side, which allows public access to write/modify images in Cloudinary. To protect the storage, signed uploads are utilized.
+  - **Implementation**: The server computes a secure SHA-1 signature using `CLOUDINARY_API_SECRET` and forwards the payload directly using standard Node `crypto` algorithms. The API secret remains strictly server-side, preventing front-end credential leaks.
 
 ## Smart Features & Integration Detail
 - **Natural Language Parsing (NLP)**: Task input parses text for priority, category, tags, estimates, and deadlines, automatically stripping matching words to format clean titles.

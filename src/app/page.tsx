@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Sparkles, StickyNote } from "lucide-react";
+import { CheckCircle2, Sparkles, StickyNote, BookOpen } from "lucide-react";
 import { WeatherCard } from "@/components/weather-card";
 import { AddTodo } from "@/components/todos/add-todo";
 import { FilterTabs } from "@/components/todos/filter-tabs";
@@ -14,23 +14,27 @@ import { AccentPicker } from "@/components/accent-picker";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { TodaySummaryPill } from "@/components/today-summary-pill";
 import { NotesList } from "@/components/notes/notes-list";
+import { JournalComposer } from "@/components/journal/journal-composer";
+import { JournalFeed } from "@/components/journal/journal-feed";
 import { useStreakWatcher } from "@/hooks/use-streak-watcher";
 import { useConfettiOnAllDone } from "@/hooks/use-confetti-on-all-done";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useTodoStore } from "@/store/todo-store";
 import { useNotesStore } from "@/store/notes-store";
+import { useJournalStore } from "@/store/journal-store";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [isRaining, setIsRaining] = useState(false);
-  const [activeTab, setActiveTab] = useState<"tasks" | "notes">("tasks");
+  const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "journal">("tasks");
   const hydrated = useHydrated();
 
-  // Load tasks, streaks, and notes on mount
+  // Load tasks, streaks, notes, and journal entries on mount
   useEffect(() => {
     useTodoStore.getState().loadFromServer();
     useStreakStore.getState().loadFromServer();
     useNotesStore.getState().loadFromServer();
+    useJournalStore.getState().loadFromServer();
   }, []);
 
   const handleRainChange = useCallback((raining: boolean) => {
@@ -189,6 +193,18 @@ export default function Home() {
             >
               Notes
             </button>
+            <button
+              onClick={() => setActiveTab("journal")}
+              className={cn(
+                "rounded-full px-5 py-1.5 text-xs font-semibold transition-all border border-transparent cursor-pointer",
+                activeTab === "journal"
+                  ? "text-white shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              style={activeTab === "journal" ? { backgroundColor: "var(--accent-custom, #10b981)" } : undefined}
+            >
+              Journal
+            </button>
           </div>
         </div>
 
@@ -254,7 +270,7 @@ export default function Home() {
               )}
             </main>
           </>
-        ) : (
+        ) : activeTab === "notes" ? (
           <>
             {/* Subheader for notes */}
             <motion.div
@@ -284,6 +300,35 @@ export default function Home() {
                 </div>
               )}
             </main>
+          </>
+        ) : (
+          <>
+            {/* Subheader for journal */}
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-8 mb-3 flex items-center gap-2"
+            >
+              <BookOpen className="anim-float h-4 w-4 text-emerald-500" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Your journal
+              </h2>
+            </motion.div>
+
+            {/* Journal Composer & Feed */}
+            <div className="mt-4 space-y-6">
+              {hydrated && <JournalComposer />}
+              <main className="flex-1 pb-12">
+                {hydrated ? (
+                  <JournalFeed />
+                ) : (
+                  <div className="space-y-4">
+                    <div className="h-32 rounded-3xl bg-muted/20 animate-pulse" />
+                  </div>
+                )}
+              </main>
+            </div>
           </>
         )}
 

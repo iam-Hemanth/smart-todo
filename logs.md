@@ -47,3 +47,15 @@
 - Built a searchable Grid cards list of notes at `src/components/notes/notes-list.tsx` showing text previews, last updated times, and delete actions.
 - Introduced a glassmorphic segmented tab selection switcher (Tasks / Notes) inside `src/app/page.tsx` that coordinates view state swapping, matching theme color accents automatically.
 - Verified that compiling, routing, and packaging completes cleanly via a successful production build.
+
+## [2026-06-29] Prompt 5: Add Journal Feature with Cloudinary image uploads and Turso sync
+- Configured Cloudinary credentials (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`) in `.env.local` and `.env.example`.
+- Created a `journal_entries` table schema in the Turso database (`id`, `content`, `mood`, `image_urls`, `created_at`, `updated_at`).
+- Added a server-side Cloudinary upload endpoint at `/api/journal/upload` that signs the payload using `CLOUDINARY_API_SECRET` to prevent API secret exposure on the frontend.
+- Added API endpoints under `/api/journal` and `/api/journal/[id]` for CRUD operations on journal entries, protected by same-origin trusted authentication.
+- Built a state store at `src/store/journal-store.ts` implementing optimistic updates and background syncing with rollback mechanisms.
+- Created `src/components/journal/journal-composer.tsx` featuring content input, multi-file image selectors, previews, and upload management.
+- Created `src/components/journal/journal-feed.tsx` displaying cards grouped by day using `date-fns` formatting, inline deletion, edit triggers, and click-to-zoom lightbox modals.
+- Created `src/components/journal/journal-edit-dialog.tsx` for updating text content and removing individual attached photos.
+- Integrated the Journal view as a third tab inside the homepage segmented tab switcher in `src/app/page.tsx`.
+- Verified compilation, routing, and packaging with a successful Next.js production build.

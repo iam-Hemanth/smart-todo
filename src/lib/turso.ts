@@ -53,6 +53,17 @@ export function initDb(): Promise<void> {
           updated_at INTEGER NOT NULL
         )
       `);
+
+      await turso.execute(`
+        CREATE TABLE IF NOT EXISTS journal_entries (
+          id TEXT PRIMARY KEY,
+          content TEXT NOT NULL,
+          mood TEXT,
+          image_urls TEXT NOT NULL DEFAULT '[]',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      `);
     } catch (error) {
       dbInitialized = null; // Reset to allow retry on failure
       console.error("Database initialization failed:", error);
