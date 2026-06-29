@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Sparkles, StickyNote, BookOpen } from "lucide-react";
+import { CheckCircle2, Sparkles, StickyNote, BookOpen, Activity } from "lucide-react";
 import { WeatherCard } from "@/components/weather-card";
 import { AddTodo } from "@/components/todos/add-todo";
 import { FilterTabs } from "@/components/todos/filter-tabs";
@@ -16,25 +16,28 @@ import { TodaySummaryPill } from "@/components/today-summary-pill";
 import { NotesList } from "@/components/notes/notes-list";
 import { JournalComposer } from "@/components/journal/journal-composer";
 import { JournalFeed } from "@/components/journal/journal-feed";
+import { HabitsList } from "@/components/habits/habits-list";
 import { useStreakWatcher } from "@/hooks/use-streak-watcher";
 import { useConfettiOnAllDone } from "@/hooks/use-confetti-on-all-done";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useTodoStore } from "@/store/todo-store";
 import { useNotesStore } from "@/store/notes-store";
 import { useJournalStore } from "@/store/journal-store";
+import { useHabitsStore } from "@/store/habits-store";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [isRaining, setIsRaining] = useState(false);
-  const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "journal">("tasks");
+  const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "journal" | "habits">("tasks");
   const hydrated = useHydrated();
 
-  // Load tasks, streaks, notes, and journal entries on mount
+  // Load tasks, streaks, notes, journal, and habits on mount
   useEffect(() => {
     useTodoStore.getState().loadFromServer();
     useStreakStore.getState().loadFromServer();
     useNotesStore.getState().loadFromServer();
     useJournalStore.getState().loadFromServer();
+    useHabitsStore.getState().loadFromServer();
   }, []);
 
   const handleRainChange = useCallback((raining: boolean) => {
@@ -205,6 +208,18 @@ export default function Home() {
             >
               Journal
             </button>
+            <button
+              onClick={() => setActiveTab("habits")}
+              className={cn(
+                "rounded-full px-5 py-1.5 text-xs font-semibold transition-all border border-transparent cursor-pointer",
+                activeTab === "habits"
+                  ? "text-white shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              style={activeTab === "habits" ? { backgroundColor: "var(--accent-custom, #10b981)" } : undefined}
+            >
+              Habits
+            </button>
           </div>
         </div>
 
@@ -301,7 +316,7 @@ export default function Home() {
               )}
             </main>
           </>
-        ) : (
+        ) : activeTab === "journal" ? (
           <>
             {/* Subheader for journal */}
             <motion.div
@@ -329,6 +344,37 @@ export default function Home() {
                 )}
               </main>
             </div>
+          </>
+        ) : (
+          <>
+            {/* Subheader for habits */}
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-8 mb-3 flex items-center gap-2"
+            >
+              <Activity className="anim-float h-4 w-4 text-emerald-500" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Your habits
+              </h2>
+            </motion.div>
+
+            {/* Habits List component */}
+            <main className="mt-4 flex-1 pb-12">
+              {hydrated ? (
+                <HabitsList />
+              ) : (
+                <div className="space-y-4">
+                  <div className="h-20 rounded-2xl bg-muted/30 animate-pulse" />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="h-24 rounded-2xl bg-muted/30 animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </main>
           </>
         )}
 

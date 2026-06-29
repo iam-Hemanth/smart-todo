@@ -59,3 +59,12 @@
 - Created `src/components/journal/journal-edit-dialog.tsx` for updating text content and removing individual attached photos.
 - Integrated the Journal view as a third tab inside the homepage segmented tab switcher in `src/app/page.tsx`.
 - Verified compilation, routing, and packaging with a successful Next.js production build.
+
+## [2026-06-29] Prompt 6: Add Habits Tracker Feature with Turso sync, logs upserts, and Zustand optimistic UI
+- Created `habits` and `habit_logs` table schemas in the Turso database, including unique indexes supporting conflict replacement.
+- Created Next.js API endpoints under `/api/habits` and `/api/habits/[id]` for CRUD operations on habit definitions.
+- Created `/api/habits/logs` API endpoint supporting logs fetching and upsert logs logging.
+- Built a state store at `src/store/habits-store.ts` implementing concurrent fetches, optimistic definition addition/modification/deletion, progress updates, and rollback actions.
+- Created habits list and creator composer view at `src/components/habits/habits-list.tsx` supporting date navigator switcher, yes/no checks, measurement counter targets with progress bars, and archived habits toggle regions.
+- Integrated the Habits view as a fourth tab inside the homepage segmented tab switcher in `src/app/page.tsx`.
+- Verified compilation, routing, and packaging with a successful Next.js production build.

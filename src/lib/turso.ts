@@ -64,6 +64,28 @@ export function initDb(): Promise<void> {
           updated_at INTEGER NOT NULL
         )
       `);
+
+      await turso.execute(`
+        CREATE TABLE IF NOT EXISTS habits (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          target_count INTEGER,
+          unit TEXT,
+          created_at INTEGER NOT NULL,
+          archived INTEGER NOT NULL DEFAULT 0
+        )
+      `);
+
+      await turso.execute(`
+        CREATE TABLE IF NOT EXISTS habit_logs (
+          id TEXT PRIMARY KEY,
+          habit_id TEXT NOT NULL,
+          date TEXT NOT NULL,
+          count INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          UNIQUE(habit_id, date)
+        )
+      `);
     } catch (error) {
       dbInitialized = null; // Reset to allow retry on failure
       console.error("Database initialization failed:", error);

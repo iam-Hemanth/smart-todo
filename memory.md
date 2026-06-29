@@ -3,10 +3,10 @@
 ## Key Architectural Decisions
 - **App Router**: Next.js App Router is used. All dynamic pages and server-side routes are inside `src/app/`.
 - **Hybrid Data Persistence**:
-  - **Remote Sync (Turso SQL Database)**: Todos, Streaks, Notes, and Journal entries data are stored in a cloud-hosted Turso database. Data synchronization runs asynchronously in the background. If a write fails (e.g. offline status), the changes are rolled back in the Zustand state and a visible error toast is displayed via Sonner. No complex offline queueing or merge replica is configured to maintain codebase simplicity.
+  - **Remote Sync (Turso SQL Database)**: Todos, Streaks, Notes, Journal entries, and Habits tracker data (habit definitions + logs) are stored in a cloud-hosted Turso database. Data synchronization runs asynchronously in the background. If a write fails (e.g. offline status), the changes are rolled back in the Zustand state and a visible error toast is displayed via Sonner. No complex offline queueing or merge replica is configured to maintain codebase simplicity.
   - **Local-Only (localStorage)**: User settings (Primary Accent color label) and Location details (latitude, longitude, city name, country) remain strictly stored in local storage to optimize access speeds and prevent cross-device settings collision.
 - **SSR Hydration Guarding**: Since the application renders client-side values and requires loading records from the database on mount, components rely on the `useHydrated` custom hook or loading boundaries. During initial page loading, a skeleton loader is displayed, preventing React hydration mismatch warnings.
-- **View Tab Switcher**: A custom glassmorphic segmented tab selection controller swaps the primary home content between "Tasks", "Notes", and "Journal" views, maintaining a clean, single-screen dashboard layout.
+- **View Tab Switcher**: A custom glassmorphic segmented tab selection controller swaps the primary home content between "Tasks", "Notes", "Journal", and "Habits" views, maintaining a clean, single-screen dashboard layout.
 
 ## Database Schema Choices
 - **Todos Table**: Structures tasks using columns matching the `Todo` interface properties:
@@ -39,9 +39,23 @@
   - `image_urls` (text, JSON array of Cloudinary secure URLs)
   - `created_at` (integer, timestamp)
   - `updated_at` (integer, timestamp)
+- **Habits Table**: Stores habit tracker definitions:
+  - `id` (text, primary key)
+  - `name` (text, not null)
+  - `target_count` (integer, nullable, target amount of repetitions)
+  - `unit` (text, nullable, unit descriptor e.g. "glasses", "minutes")
+  - `created_at` (integer, timestamp)
+  - `archived` (integer, 0/1 indicator to hide definitions without purging statistics history)
+- **Habit Logs Table**: Tracks daily completed repetitions per habit:
+  - `id` (text, primary key)
+  - `habit_id` (text, foreign pointer)
+  - `date` (text, YYYY-MM-DD)
+  - `count` (integer, completed repetitions for the day)
+  - `created_at` (integer, timestamp)
+  - Unique Constraint: `UNIQUE(habit_id, date)` to support SQL upsert commands.
 
 ## Shared-Secret Authentication & Same-Origin Trust
-- Backend API routes under `/api/todos`, `/api/streak`, `/api/notes`, and `/api/journal` validate requests based on origin source:
+- Backend API routes under `/api/todos`, `/api/streak`, `/api/notes`, `/api/journal`, and `/api/habits` validate requests based on origin source:
   - **Same-Origin Requests**: Browser client requests originating from the app are automatically trusted. This is validated by verifying `sec-fetch-site === "same-origin"` or comparing request `referer` host with `host` headers.
   - **External Requests**: Requests coming from external endpoints (e.g. iOS Shortcuts, Postman, curl) are authenticated against the server-only `PERSONAL_API_TOKEN` environment variable via the `Authorization: Bearer <PERSONAL_API_TOKEN>` header.
 - **Security Tradeoffs Choice**:
