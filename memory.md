@@ -99,3 +99,5 @@
   - Heatmap data is returned unfiltered to render a full calendar matrix.
   - The calendar heatmap is constructed with pure CSS grid for responsive rendering and lightweight footprint.
   - Weather correlation is deliberately excluded since the weather API doesn't persist historical weather conditions, preventing a lookup against historical fitness dates.
+  - Heatmap grid cells and Range Selection pills dynamically resolve accent colors via `var(--accent-custom)` and standard `color-mix` styling. This matches the selected user theme accent dynamically.
+  - Dashboard layout follows a visual hierarchy: Heatmap spans full width as a central hero element, while Records & Streaks (2/3 width) and Day of Week average steps chart (1/3 width) sit side-by-side.

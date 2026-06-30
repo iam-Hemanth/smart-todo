@@ -6,9 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   startOfYear,
   endOfYear,
-  eachDayOfInterval,
   format,
-  getDay,
   startOfWeek,
   addDays,
   isAfter,
@@ -27,14 +25,19 @@ function getStepIntensity(steps: number): number {
   return 5;
 }
 
-const INTENSITY_CLASSES: Record<number, string> = {
-  0: "bg-muted/30 dark:bg-muted/10",
-  1: "bg-emerald-200 dark:bg-emerald-900/40",
-  2: "bg-emerald-300 dark:bg-emerald-700/50",
-  3: "bg-emerald-500 dark:bg-emerald-600/60",
-  4: "bg-emerald-600 dark:bg-emerald-500/70",
-  5: "bg-emerald-800 dark:bg-emerald-400",
-};
+function getIntensityStyle(level: number): React.CSSProperties | undefined {
+  if (level === 0) return undefined;
+  const opacities = {
+    1: "15%",
+    2: "38%",
+    3: "60%",
+    4: "82%",
+    5: "100%",
+  };
+  return {
+    backgroundColor: `color-mix(in srgb, var(--accent-custom, #10b981) ${opacities[level as 1|2|3|4|5]}, transparent)`
+  };
+}
 
 export function FitnessHeatmap() {
   const insights = useFitnessStore((s) => s.insights);
@@ -186,28 +189,38 @@ export function FitnessHeatmap() {
             {/* Weeks */}
             {gridData.map((week, weekIdx) => (
               <div key={weekIdx} className="flex flex-col gap-0.5">
-                {week.map((day, dayIdx) => (
-                  <div
-                    key={day.dateStr}
-                    className={cn(
-                      "h-[12px] w-[12px] rounded-sm transition-colors",
-                      day.isFuture || !day.isCurrentYear
-                        ? "bg-transparent"
-                        : INTENSITY_CLASSES[getStepIntensity(day.steps)]
-                    )}
-                    onMouseEnter={(e) => {
-                      if (!day.isFuture && day.isCurrentYear) {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setTooltip({
-                          x: rect.left + rect.width / 2,
-                          y: rect.top,
-                          date: day.dateStr,
-                          steps: day.steps,
-                        });
+                {week.map((day, dayIdx) => {
+                  const intensity = getStepIntensity(day.steps);
+                  return (
+                    <div
+                      key={day.dateStr}
+                      className={cn(
+                        "h-[12px] w-[12px] rounded-sm transition-colors",
+                        day.isFuture || !day.isCurrentYear
+                          ? "bg-transparent"
+                          : intensity === 0
+                            ? "bg-muted/20 dark:bg-muted/10"
+                            : ""
+                      )}
+                      style={
+                        day.isFuture || !day.isCurrentYear || intensity === 0
+                          ? undefined
+                          : getIntensityStyle(intensity)
                       }
-                    }}
-                  />
-                ))}
+                      onMouseEnter={(e) => {
+                        if (!day.isFuture && day.isCurrentYear) {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setTooltip({
+                            x: rect.left + rect.width / 2,
+                            y: rect.top,
+                            date: day.dateStr,
+                            steps: day.steps,
+                          });
+                        }
+                      }}
+                    />
+                  );
+                })}
               </div>
             ))}
 
@@ -226,8 +239,13 @@ export function FitnessHeatmap() {
           {/* Legend */}
           <div className="flex items-center gap-1.5 mt-3 ml-8">
             <span className="text-[10px] text-muted-foreground font-medium">Less</span>
-            {[0, 1, 2, 3, 4, 5].map((level) => (
-              <div key={level} className={cn("h-[12px] w-[12px] rounded-sm", INTENSITY_CLASSES[level])} />
+            <div className="h-[12px] w-[12px] rounded-sm bg-muted/20 dark:bg-muted/10" />
+            {[1, 2, 3, 4, 5].map((level) => (
+              <div
+                key={level}
+                className="h-[12px] w-[12px] rounded-sm"
+                style={getIntensityStyle(level)}
+              />
             ))}
             <span className="text-[10px] text-muted-foreground font-medium">More</span>
           </div>

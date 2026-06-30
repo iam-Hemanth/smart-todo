@@ -73,11 +73,19 @@ export function FitnessRecords() {
               key={opt.value}
               onClick={() => setRange(opt.value)}
               className={cn(
-                "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all cursor-pointer",
+                "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all cursor-pointer border border-transparent",
                 selectedRange === opt.value
-                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                  ? "text-foreground font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               )}
+              style={
+                selectedRange === opt.value
+                  ? {
+                      backgroundColor: "color-mix(in srgb, var(--accent-custom, #10b981) 15%, transparent)",
+                      color: "var(--accent-custom, #10b981)",
+                    }
+                  : undefined
+              }
             >
               {opt.label}
             </button>
@@ -87,13 +95,13 @@ export function FitnessRecords() {
 
       {/* Stat Cards */}
       {insightsLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="h-24 rounded-2xl bg-muted/30 animate-pulse border border-border/20" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}

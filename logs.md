@@ -120,3 +120,15 @@
 - Skiped **Weather Correlation** because the application's weather integration is forecast-only and does not store or archive historical daily weather logs.
 - Integrated all new insight sections directly below the existing 7-day line chart in `src/components/fitness/fitness-dashboard.tsx`.
 - Initiated insights loading on home page mount in `src/app/page.tsx`.
+
+## [2026-06-30] Prompt 11: Redesign Fitness Tab Layout & Colors for Accent Consistency
+- Removed all hardcoded `bg-emerald` and color-based classes from the new Fitness insights widgets:
+  - Range selector active pill buttons in `FitnessRecords` now use dynamic `color-mix` values powered by CSS variable `var(--accent-custom)`.
+  - The GitHub-style `FitnessHeatmap` now dynamically scales color intensities (Levels 1–5 mapped to 15%, 38%, 60%, 82%, 100% opacity) using `var(--accent-custom)`, ensuring perfect cohesion with whichever color preset (emerald, violet, amber, rose, sky) the user selects.
+  - Increased contrast between heatmap legend steps to make visual differences obvious.
+  - The empty state icon container in `FitnessDashboard` now uses `var(--accent-custom)` dynamic inline styles instead of hardcoded emerald.
+- Redesigned the Fitness dashboard layout to replace the single vertical stack:
+  - Renders `FitnessHeatmap` as the hero element spanning full width below the 7-day chart.
+  - Groups `FitnessRecords` and `FitnessDayOfWeek` side-by-side inside a responsive grid (`grid-cols-1 lg:grid-cols-3` with `lg:col-span-2` for Records & Streaks and `lg:col-span-1` for the Day-of-Week bar chart).
+  - Configured `FitnessRecords` to layout-switch to a 2x2 grid inside its 2/3 width slot, matching the vertical height of the Day-of-Week chart beautifully.
+- Verified TypeScript checks and Next.js routes with a successful production build.
