@@ -3,10 +3,10 @@
 ## Key Architectural Decisions
 - **App Router**: Next.js App Router is used. All dynamic pages and server-side routes are inside `src/app/`.
 - **Hybrid Data Persistence**:
-  - **Remote Sync (Turso SQL Database)**: Todos, Streaks, Notes, Journal entries, and Habits tracker data (habit definitions + logs) are stored in a cloud-hosted Turso database. Data synchronization runs asynchronously in the background. If a write fails (e.g. offline status), the changes are rolled back in the Zustand state and a visible error toast is displayed via Sonner. No complex offline queueing or merge replica is configured to maintain codebase simplicity.
+  - **Remote Sync (Turso SQL Database)**: Todos, Streaks, Notes, Journal entries, Habits tracker data (habit definitions + logs), and Fitness logs are stored in a cloud-hosted Turso database. Data synchronization runs asynchronously in the background. If a write fails (e.g. offline status), the changes are rolled back in the Zustand state and a visible error toast is displayed via Sonner. No complex offline queueing or merge replica is configured to maintain codebase simplicity.
   - **Local-Only (localStorage)**: User settings (Primary Accent color label) and Location details (latitude, longitude, city name, country) remain strictly stored in local storage to optimize access speeds and prevent cross-device settings collision.
 - **SSR Hydration Guarding**: Since the application renders client-side values and requires loading records from the database on mount, components rely on the `useHydrated` custom hook or loading boundaries. During initial page loading, a skeleton loader is displayed, preventing React hydration mismatch warnings.
-- **View Tab Switcher**: A custom glassmorphic segmented tab selection controller swaps the primary home content between "Tasks", "Notes", "Journal", and "Habits" views, maintaining a clean, single-screen dashboard layout.
+- **View Tab Switcher**: A custom glassmorphic segmented tab selection controller swaps the primary home content between "Tasks", "Notes", "Journal", "Habits", and "Fitness" views, maintaining a clean, single-screen dashboard layout.
 
 ## Visual Language & Design Standards (Tasks Reference Standard)
 - **Cards**: Elements use a standard layout of `rounded-2xl`, border definitions `border-white/50 dark:border-white/5 bg-white/70 dark:bg-white/[0.03]`, and hover actions `hover:shadow-md hover:bg-white dark:hover:bg-white/[0.05]`.
@@ -61,11 +61,22 @@
   - `count` (integer, completed repetitions for the day)
   - `created_at` (integer, timestamp)
   - Unique Constraint: `UNIQUE(habit_id, date)` to support SQL upsert commands.
+- **Fitness Logs Table**: Stores daily health/fitness metrics pushed externally via iOS Shortcuts:
+  - `id` (text, primary key, format: `fitness-YYYY-MM-DD`)
+  - `date` (text, UNIQUE, YYYY-MM-DD)
+  - `steps` (integer, default 0)
+  - `calories` (integer, active calories, default 0)
+  - `distance_km` (real, default 0)
+  - `flights_climbed` (integer, nullable)
+  - `created_at` (integer, timestamp)
+  - `updated_at` (integer, timestamp)
+  - Upsert: `ON CONFLICT(date) DO UPDATE SET ...` to replace same-day entries.
 
 ## Shared-Secret Authentication & Same-Origin Trust
-- Backend API routes under `/api/todos`, `/api/streak`, `/api/notes`, `/api/journal`, and `/api/habits` validate requests based on origin source:
+- Backend API routes under `/api/todos`, `/api/streak`, `/api/notes`, `/api/journal`, `/api/habits`, and `/api/fitness` validate requests based on origin source:
   - **Same-Origin Requests**: Browser client requests originating from the app are automatically trusted. This is validated by verifying `sec-fetch-site === "same-origin"` or comparing request `referer` host with `host` headers.
   - **External Requests**: Requests coming from external endpoints (e.g. iOS Shortcuts, Postman, curl) are authenticated against the server-only `PERSONAL_API_TOKEN` environment variable via the `Authorization: Bearer <PERSONAL_API_TOKEN>` header.
+- **Fitness Sync Exception (`POST /api/fitness/sync`)**: This route intentionally does NOT honour same-origin trust. It ALWAYS requires a valid `Authorization: Bearer` token because it is designed exclusively for external callers (iOS Shortcuts). Zod validates the request body schema before any database access.
 - **Security Tradeoffs Choice**:
   - We elected to **automatically trust same-origin calls** instead of inject/bundle tokens.
   - *Tradeoffs*:
@@ -81,3 +92,4 @@
 - **Natural Language Parsing (NLP)**: Task input parses text for priority, category, tags, estimates, and deadlines, automatically stripping matching words to format clean titles.
 - **Daily Completed Streak**: Calculated by finding consecutive completed days starting from today or yesterday (grace period). The completions list is loaded once from the database. A loading guard in `useStreakWatcher` prevents the watcher from double-triggering completed states during initial load.
 - **Weather-Aware System**: Geocoding APIs are fetched via Nominatim and Open-Meteo. The client checks weather parameters every 60 seconds.
+- **Fitness Sync**: Health metrics (steps, calories, distance, flights) are pushed from an iOS Shortcut to `POST /api/fitness/sync`. The dashboard's Fitness tab reads data via `GET /api/fitness` and displays today's stats as cards plus a 7-day Recharts line chart. The store is read-only — no in-app editing of fitness data.

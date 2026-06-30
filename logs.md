@@ -77,3 +77,19 @@
 - Integrated brand/feature icon adornments in the input areas of the Journal composer (using `BookOpen` icon) and the Habits creator (using `Activity` icon) to match the Tasks composer layout.
 - Tightened page grids, container paddings, and header date badges to establish a clean, consistent design language across all sections.
 - Verified packaging and type validation with a successful Next.js production build.
+
+## [2026-06-30] Prompt 8: Add Fitness Sync Feature with iOS Shortcut endpoint, Turso storage, and Recharts dashboard
+- Created a `fitness_logs` table schema in the Turso database (`id`, `date` UNIQUE, `steps`, `calories`, `distance_km`, `flights_climbed`, `created_at`, `updated_at`).
+- Created **POST `/api/fitness/sync`** — a public-facing endpoint designed for iOS Shortcuts. This route:
+  - **Always requires** `Authorization: Bearer <PERSONAL_API_TOKEN>` — intentionally does NOT honour same-origin bypass since it's designed for external callers only.
+  - Validates request body with Zod schema (date format, numeric fields) returning detailed 400 errors.
+  - Performs SQL upsert (`INSERT ... ON CONFLICT(date) DO UPDATE SET ...`) to prevent duplicate rows per day.
+- Created **GET `/api/fitness`** — internal dashboard endpoint using the standard same-origin trusted authentication pattern. Returns logs for the last N days (default: 30).
+- Built a read-only Zustand store at `src/store/fitness-store.ts` (no persist, no optimistic writes — data is externally pushed).
+- Created `src/components/fitness/fitness-dashboard.tsx` with:
+  - Today's stat cards (Steps, Active Calories, Distance, Flights Climbed) using themed icon adornments and the `anim-lift` design system.
+  - A 7-day dual-line Recharts chart showing steps (solid) and calories (dashed) with branded tooltip styling.
+  - Empty state prompting the user to run their iOS Shortcut.
+- Integrated the Fitness view as a fifth tab in the homepage segmented tab switcher in `src/app/page.tsx`.
+- No new environment variables introduced — reuses existing `PERSONAL_API_TOKEN`.
+- Verified compilation, routing, and packaging with a successful Next.js production build.

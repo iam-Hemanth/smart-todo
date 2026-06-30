@@ -86,6 +86,19 @@ export function initDb(): Promise<void> {
           UNIQUE(habit_id, date)
         )
       `);
+
+      await turso.execute(`
+        CREATE TABLE IF NOT EXISTS fitness_logs (
+          id TEXT PRIMARY KEY,
+          date TEXT NOT NULL UNIQUE,
+          steps INTEGER NOT NULL DEFAULT 0,
+          calories INTEGER NOT NULL DEFAULT 0,
+          distance_km REAL NOT NULL DEFAULT 0,
+          flights_climbed INTEGER,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      `);
     } catch (error) {
       dbInitialized = null; // Reset to allow retry on failure
       console.error("Database initialization failed:", error);

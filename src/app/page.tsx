@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Sparkles, StickyNote, BookOpen, Activity } from "lucide-react";
+import { CheckCircle2, Sparkles, StickyNote, BookOpen, Activity, HeartPulse } from "lucide-react";
 import { WeatherCard } from "@/components/weather-card";
 import { AddTodo } from "@/components/todos/add-todo";
 import { FilterTabs } from "@/components/todos/filter-tabs";
@@ -17,6 +17,7 @@ import { NotesList } from "@/components/notes/notes-list";
 import { JournalComposer } from "@/components/journal/journal-composer";
 import { JournalFeed } from "@/components/journal/journal-feed";
 import { HabitsList } from "@/components/habits/habits-list";
+import { FitnessDashboard } from "@/components/fitness/fitness-dashboard";
 import { useStreakWatcher } from "@/hooks/use-streak-watcher";
 import { useConfettiOnAllDone } from "@/hooks/use-confetti-on-all-done";
 import { useHydrated } from "@/hooks/use-hydrated";
@@ -24,20 +25,22 @@ import { useTodoStore } from "@/store/todo-store";
 import { useNotesStore } from "@/store/notes-store";
 import { useJournalStore } from "@/store/journal-store";
 import { useHabitsStore } from "@/store/habits-store";
+import { useFitnessStore } from "@/store/fitness-store";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [isRaining, setIsRaining] = useState(false);
-  const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "journal" | "habits">("tasks");
+  const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "journal" | "habits" | "fitness">("tasks");
   const hydrated = useHydrated();
 
-  // Load tasks, streaks, notes, journal, and habits on mount
+  // Load tasks, streaks, notes, journal, habits, and fitness on mount
   useEffect(() => {
     useTodoStore.getState().loadFromServer();
     useStreakStore.getState().loadFromServer();
     useNotesStore.getState().loadFromServer();
     useJournalStore.getState().loadFromServer();
     useHabitsStore.getState().loadFromServer();
+    useFitnessStore.getState().loadFromServer();
   }, []);
 
   const handleRainChange = useCallback((raining: boolean) => {
@@ -220,6 +223,18 @@ export default function Home() {
             >
               Habits
             </button>
+            <button
+              onClick={() => setActiveTab("fitness")}
+              className={cn(
+                "rounded-full px-5 py-1.5 text-xs font-semibold transition-all border border-transparent cursor-pointer",
+                activeTab === "fitness"
+                  ? "text-white shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              style={activeTab === "fitness" ? { backgroundColor: "var(--accent-custom, #10b981)" } : undefined}
+            >
+              Fitness
+            </button>
           </div>
         </div>
 
@@ -345,7 +360,7 @@ export default function Home() {
               </main>
             </div>
           </>
-        ) : (
+        ) : activeTab === "habits" ? (
           <>
             {/* Subheader for habits */}
             <motion.div
@@ -369,6 +384,36 @@ export default function Home() {
                   <div className="h-20 rounded-2xl bg-muted/30 animate-pulse" />
                   <div className="grid gap-3 sm:grid-cols-2">
                     {[0, 1, 2].map((i) => (
+                      <div key={i} className="h-24 rounded-2xl bg-muted/30 animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </main>
+          </>
+        ) : (
+          <>
+            {/* Subheader for fitness */}
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-8 mb-3 flex items-center gap-2"
+            >
+              <HeartPulse className="anim-float h-4 w-4 text-emerald-500" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Your fitness
+              </h2>
+            </motion.div>
+
+            {/* Fitness Dashboard */}
+            <main className="mt-4 flex-1 pb-12">
+              {hydrated ? (
+                <FitnessDashboard />
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[0, 1, 2, 3].map((i) => (
                       <div key={i} className="h-24 rounded-2xl bg-muted/30 animate-pulse" />
                     ))}
                   </div>
