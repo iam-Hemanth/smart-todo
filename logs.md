@@ -82,7 +82,7 @@
 - Created a `fitness_logs` table schema in the Turso database (`id`, `date` UNIQUE, `steps`, `calories`, `distance_km`, `flights_climbed`, `created_at`, `updated_at`).
 - Created **POST `/api/fitness/sync`** — a public-facing endpoint designed for iOS Shortcuts. This route:
   - **Always requires** `Authorization: Bearer <PERSONAL_API_TOKEN>` — intentionally does NOT honour same-origin bypass since it's designed for external callers only.
-  - Validates request body with Zod schema (date format, numeric fields) returning detailed 400 errors.
+  - Validates request body with Zod schema (date format, numeric fields coerced from numbers or strings) returning detailed 400 errors.
   - Performs SQL upsert (`INSERT ... ON CONFLICT(date) DO UPDATE SET ...`) to prevent duplicate rows per day.
 - Created **GET `/api/fitness`** — internal dashboard endpoint using the standard same-origin trusted authentication pattern. Returns logs for the last N days (default: 30).
 - Built a read-only Zustand store at `src/store/fitness-store.ts` (no persist, no optimistic writes — data is externally pushed).

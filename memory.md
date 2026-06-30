@@ -76,7 +76,7 @@
 - Backend API routes under `/api/todos`, `/api/streak`, `/api/notes`, `/api/journal`, `/api/habits`, and `/api/fitness` validate requests based on origin source:
   - **Same-Origin Requests**: Browser client requests originating from the app are automatically trusted. This is validated by verifying `sec-fetch-site === "same-origin"` or comparing request `referer` host with `host` headers.
   - **External Requests**: Requests coming from external endpoints (e.g. iOS Shortcuts, Postman, curl) are authenticated against the server-only `PERSONAL_API_TOKEN` environment variable via the `Authorization: Bearer <PERSONAL_API_TOKEN>` header.
-- **Fitness Sync Exception (`POST /api/fitness/sync`)**: This route intentionally does NOT honour same-origin trust. It ALWAYS requires a valid `Authorization: Bearer` token because it is designed exclusively for external callers (iOS Shortcuts). Zod validates the request body schema before any database access.
+- **Fitness Sync Exception (`POST /api/fitness/sync`)**: This route intentionally does NOT honour same-origin trust. It ALWAYS requires a valid `Authorization: Bearer` token because it is designed exclusively for external callers (iOS Shortcuts). Zod validates the request body schema before database operations. Numeric fields (`steps`, `calories`, `distance_km`, `flights_climbed`) use `z.coerce.number()` to automatically cast values since the iOS Shortcuts app often delivers numeric properties as JSON strings.
 - **Security Tradeoffs Choice**:
   - We elected to **automatically trust same-origin calls** instead of inject/bundle tokens.
   - *Tradeoffs*:

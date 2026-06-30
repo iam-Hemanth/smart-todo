@@ -13,10 +13,10 @@ import { z } from "zod/v4";
 
 const FitnessSyncSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
-  steps: z.number().int().min(0),
-  calories: z.number().int().min(0),
-  distance_km: z.number().min(0),
-  flights_climbed: z.number().int().min(0).optional(),
+  steps: z.coerce.number().int().min(0),
+  calories: z.coerce.number().int().min(0),
+  distance_km: z.coerce.number().min(0),
+  flights_climbed: z.coerce.number().int().min(0).optional(),
 });
 
 export async function POST(req: Request) {
