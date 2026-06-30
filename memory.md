@@ -94,3 +94,8 @@
 - **Weather-Aware System**: Geocoding APIs are fetched via Nominatim and Open-Meteo. The client checks weather parameters every 60 seconds.
 - **Fitness Sync**: Health metrics (steps, calories, distance, flights) are pushed from an iOS Shortcut to `POST /api/fitness/sync`. The dashboard's Fitness tab reads data via `GET /api/fitness` and displays today's stats as cards plus a 7-day Recharts line chart. The store is read-only — no in-app editing of fitness data.
 - **Apple Health Backfill (One-Time)**: A local script (`scripts/import-health-data.mjs`) was run on 2026-06-30 to import 1,136 days of historical data from an Apple Health `export.xml` (103 MB, 87,625 records). Date range: 2023-05-22 → 2026-06-30. Uses SAX streaming + batched Turso upserts. The script is kept in the repo for potential re-runs but is not deployed.
+- **Fitness Insights Engine**: Denser historical stats are calculated server-side at `/api/fitness/insights` rather than client-side to handle the ~1,100+ daily logs efficiently. 
+  - Supports range filtering (`?range=30d|90d|6mo|1yr|all`) for records, streaks, and day-of-week averages.
+  - Heatmap data is returned unfiltered to render a full calendar matrix.
+  - The calendar heatmap is constructed with pure CSS grid for responsive rendering and lightweight footprint.
+  - Weather correlation is deliberately excluded since the weather API doesn't persist historical weather conditions, preventing a lookup against historical fitness dates.

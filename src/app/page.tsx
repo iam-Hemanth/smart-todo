@@ -41,6 +41,7 @@ export default function Home() {
     useJournalStore.getState().loadFromServer();
     useHabitsStore.getState().loadFromServer();
     useFitnessStore.getState().loadFromServer();
+    useFitnessStore.getState().loadInsights();
   }, []);
 
   const handleRainChange = useCallback((raining: boolean) => {

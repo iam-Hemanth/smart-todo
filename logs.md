@@ -104,3 +104,19 @@
   - 1,136 unique days imported
   - Date range: **2023-05-22** → **2026-06-30**
   - Skipped 8 unrelated HKQuantityTypeIdentifier types (BasalEnergyBurned, BodyMass, Height, WalkingSteadiness, WalkingAsymmetryPercentage, WalkingDoubleSupportPercentage, WalkingSpeed, WalkingStepLength)
+
+## [2026-06-30] Prompt 10: Upgrade Fitness Tab with Insights, Heatmap, and Dow Chart
+- Created **GET `/api/fitness/insights`** route to calculate records, streaks, heatmap data, and day-of-week averages:
+  - Supports query parameter `?range=30d|90d|6mo|1yr|all`.
+  - Calculates Best Day ever, Best 7-day rolling week steps (SQL window function), current/longest streak above 8,000 steps (gap-detection loop), and day-of-week averages.
+  - Heatmap is returned unfiltered (contains all ~1,136 days for the grid visualization).
+- Updated `src/store/fitness-store.ts` to manage insights data, load states, and range state.
+- Created `src/components/fitness/fitness-records.tsx` with a range selector and cards (Best Day, Best Week, Current Streak, Longest Streak).
+- Created `src/components/fitness/fitness-heatmap.tsx` rendering a GitHub-style calendar heatmap. Features:
+  - Displays grid of days by weeks for the selected year.
+  - Navigation buttons to toggle between available years (2023–2026).
+  - Hover tooltips using standard glassmorphism styling showing precise dates and steps.
+- Created `src/components/fitness/fitness-day-of-week.tsx` rendering a horizontal bar chart showing average steps per day of week (Monday to Sunday).
+- Skiped **Weather Correlation** because the application's weather integration is forecast-only and does not store or archive historical daily weather logs.
+- Integrated all new insight sections directly below the existing 7-day line chart in `src/components/fitness/fitness-dashboard.tsx`.
+- Initiated insights loading on home page mount in `src/app/page.tsx`.

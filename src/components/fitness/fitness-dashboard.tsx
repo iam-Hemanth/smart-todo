@@ -20,6 +20,9 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useFitnessStore, type FitnessLog } from "@/store/fitness-store";
+import { FitnessRecords } from "./fitness-records";
+import { FitnessHeatmap } from "./fitness-heatmap";
+import { FitnessDayOfWeek } from "./fitness-day-of-week";
 import { cn } from "@/lib/utils";
 
 function todayStr() {
@@ -196,6 +199,15 @@ export function FitnessDashboard() {
           </div>
         </motion.div>
       )}
+
+      {/* Records & Streaks (with range selector) */}
+      <FitnessRecords />
+
+      {/* Calendar Heatmap */}
+      <FitnessHeatmap />
+
+      {/* Day-of-Week Pattern */}
+      <FitnessDayOfWeek />
     </div>
   );
 }
