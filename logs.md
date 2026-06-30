@@ -93,3 +93,14 @@
 - Integrated the Fitness view as a fifth tab in the homepage segmented tab switcher in `src/app/page.tsx`.
 - No new environment variables introduced — reuses existing `PERSONAL_API_TOKEN`.
 - Verified compilation, routing, and packaging with a successful Next.js production build.
+
+## [2026-06-30] Prompt 9: One-Time Apple Health Export Import into Turso fitness_logs
+- Created `scripts/import-health-data.mjs` — a local Node.js script (not deployed) that streams `export.xml` (103 MB) using the `sax` SAX parser.
+- Installed `sax` and `dotenv` dependencies.
+- Extracted and aggregated 4 record types: StepCount, ActiveEnergyBurned, DistanceWalkingRunning, FlightsClimbed — grouped by calendar date (YYYY-MM-DD from `startDate` attribute).
+- Batched upserts into Turso `fitness_logs` using `turso.batch()` (100 rows per round-trip, 12 batches total).
+- **Import results**:
+  - 87,625 individual health records parsed
+  - 1,136 unique days imported
+  - Date range: **2023-05-22** → **2026-06-30**
+  - Skipped 8 unrelated HKQuantityTypeIdentifier types (BasalEnergyBurned, BodyMass, Height, WalkingSteadiness, WalkingAsymmetryPercentage, WalkingDoubleSupportPercentage, WalkingSpeed, WalkingStepLength)

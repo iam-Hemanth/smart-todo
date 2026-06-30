@@ -78,3 +78,5 @@ standalone/
 !.dev.vars.example
 
 !.env.example
+
+export.xml
